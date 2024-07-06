@@ -1,0 +1,113 @@
+name: smarterise-infra
+
+on:
+  push:
+    branches:
+      - 'develop'
+      - 'main'
+      - 'feat/*'
+  pull_request:
+    branches:
+      - 'develop'
+      - 'main'
+
+jobs:
+  terraform-plan-feat:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    if: startsWith(github.ref, 'refs/heads/feat/') == true || github.event.pull_request.base.ref == 'dev'
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-2
+
+      - name: terraform plan
+        uses: dflook/terraform-plan@v1
+        with:
+          path: terraform
+
+  terraform-plan-dev:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    if: github.ref == 'refs/heads/develop' || github.event.pull_request.base.ref == 'develop'
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-2
+
+      - name: terraform plan
+        uses: dflook/terraform-plan@v1
+        with:
+          path: terraform/
+
+  terraform-apply-dev:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    if: github.ref == 'refs/heads/develop'
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: prepare python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: prepare_flatten_json_lambda_layer
+        run: |
+          mkdir python
+          cd python
+          pip3 install flatten_json==0.1.13 -t .
+          cd ..
+          zip -r flattenjson.zip ./python
+
+      - name: prepare_awswrangler_lambda_layer
+        run: |
+          terraform version
+          wget https://github.com/awslabs/aws-data-wrangler/releases/download/2.16.1/awswrangler-layer-2.16.1-py3.9.zip
+
+      - name: prepare_sqlalchemy_aurora_data_api_lambda_layer
+        run: |
+          rm -rf python
+          mkdir python
+          cd python
+          pip3 install sqlalchemy-aurora-data-api==0.4.1 -t .
+          cd ..
+          zip -r sqlalchemy.zip ./python
+
+      # - name: prepare_catboost_lambda_layer
+      #   run: |
+      #     rm -rf python
+      #     mkdir python
+      #     cd python
+      #     pip3 install catboost==1.1 -t .
+      #     cd ..
+      #     zip -r catboost.zip ./python
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-2
+
+      - name: terraform apply
+        uses: dflook/terraform-apply@v1
+        with:
+          path: terraform/
+          auto_approve: true
