@@ -1,0 +1,7 @@
+aurora-data-api==0.4.0
+awswrangler==2.16.1
+boto3==1.24.68
+botocore==1.27.68
+pandas==1.4.4
+SQLAlchemy==1.4.41
+sqlalchemy-aurora-data-api==0.4.1

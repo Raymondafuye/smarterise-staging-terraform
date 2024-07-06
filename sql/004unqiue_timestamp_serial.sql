@@ -1,0 +1,3 @@
+ALTER TABLE smart_device_readings
+ADD CONSTRAINT unique_smart_device_readings_timestamp_gateway_serial
+UNIQUE (timestamp, gateway_serial);
