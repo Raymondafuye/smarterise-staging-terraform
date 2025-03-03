@@ -2,7 +2,7 @@ resource "aws_secretsmanager_secret" "rds_credentials" {
   name = "rds-credentials-${aws_db_instance.rds_postgresql.identifier}"
 }
 
-resource "aws_secretsmanager_secret_version" "rds_cluster_master_password" {
+resource "aws_secretsmanager_secret_version" "rds_instance_master_password" {
   secret_id = aws_secretsmanager_secret.rds_credentials.id
   secret_string = jsonencode({
     username = aws_db_instance.rds_postgresql.username

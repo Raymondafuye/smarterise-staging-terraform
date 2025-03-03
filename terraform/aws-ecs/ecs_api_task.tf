@@ -62,8 +62,8 @@ resource "aws_ecs_service" "api_service" {
 
 resource "aws_ecs_task_definition" "api_service_task_definition" {
   family                   = "api_service_${var.environment}"
-  cpu                      = 256
-  memory                   = 512
+  cpu                      = 512
+  memory                   = 1024
   network_mode             = "awsvpc"
   task_role_arn            = "arn:aws:iam::${var.aws_account_id}:role/ecsTaskExecutionRole${var.environment}"
   execution_role_arn       = "arn:aws:iam::${var.aws_account_id}:role/ecsTaskExecutionRole${var.environment}"

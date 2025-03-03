@@ -48,12 +48,12 @@ module "aws-lambda" {
   datalake_raw_athena_results_bucket_arn          = module.s3.datalake_raw_athena_results_bucket_arn
   parsed_device_kinesis_data_stream_arn           = module.aws_kinesis_data_stream.parsed_device_data_stream_arn
   smart_deivce_to_rds_env_vars                    = { "DB_INSTANCE_ARN" : module.rds.rds_instance_arn, "SECRET_ARN" : module.rds.rds_credentials_secret_arn}
-  rds_endpoint                                    = module.aws-rds.rds_instance_endpoint
-  rds_db_name                                     = module.aws-rds.rds_instance_name
-  rds_username                                    = module.aws-rds.rds_instance_username
-  rds_password                                    = module.aws-rds.rds_instance_password
-  rds_cluster_arn                                 = module.rds.rds_instance_arn
-  rds_cluster_secret_arn                          = module.rds.rds_credentials_secret_arn
+  rds_endpoint                                    = module.rds.rds_instance_endpoint
+  rds_db_name                                     = module.rds.rds_instance_name
+  rds_username                                    = module.rds.rds_instance_username
+  rds_password                                    = module.rds.rds_instance_password
+  rds_instance_arn                                = module.rds.rds_instance_arn
+  rds_credentials_secret_arn                      = module.rds.rds_credentials_secret_arn
   smart_device_to_s3_raw_lambda_function_env_vars = {}
   connect_to_aurora_lambda_function_env_vars      = { "DB_INSTANCE_ARN" : module.rds.rds_instance_arn,"SECRET_ARN" : module.rds.rds_credentials_secret_arn}
   }

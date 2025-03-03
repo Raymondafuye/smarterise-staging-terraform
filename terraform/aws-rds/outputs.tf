@@ -21,3 +21,8 @@ output "rds_credentials_secret_arn" {
 output "rds_connection_string_secret_arn" {
   value = aws_secretsmanager_secret.rds_connection_string.arn
 }
+
+output "rds_instance_password" {
+  value     = random_password.master.result
+  sensitive = true
+}

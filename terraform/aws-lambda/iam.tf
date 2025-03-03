@@ -92,7 +92,7 @@ data "aws_iam_policy_document" "iam_policy_document" {
     ]
     effect = "Allow"
     resources = [
-      var.rds_cluster_arn
+      var.rds_instance_arn
     ]
   }
   statement {
@@ -102,7 +102,7 @@ data "aws_iam_policy_document" "iam_policy_document" {
     ]
     effect = "Allow"
     resources = [
-      var.rds_cluster_secret_arn
+      var.rds_credentials_secret_arn
     ]
   }
   statement {

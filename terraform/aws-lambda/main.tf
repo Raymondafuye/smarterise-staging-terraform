@@ -77,19 +77,21 @@ module "smart_device_to_rds_lambda_function" {
 
   
 
-  environment_variables = {
-    DB_HOST     = var.rds_endpoint
-    DB_NAME     = var.rds_db_name
-    DB_USER     = var.rds_username
-    DB_PASSWORD = var.rds_password
-    DB_PORT     = "5432"
-  }
+  environment_variables = merge(
+    {
+      DB_HOST     = var.rds_endpoint
+      DB_NAME     = var.rds_db_name
+      DB_USER     = var.rds_username
+      DB_PASSWORD = var.rds_password
+      DB_PORT     = "5432"
+    },
+    var.smart_deivce_to_rds_env_vars
+  )
 
   recreate_missing_package = false
   ignore_source_code_hash  = true
   create_role              = false
   lambda_role              = aws_iam_role.iam_for_lambda.arn
-  environment_variables    = var.smart_deivce_to_rds_env_vars
   memory_size              = 1024
   maximum_retry_attempts   = 5
 }
