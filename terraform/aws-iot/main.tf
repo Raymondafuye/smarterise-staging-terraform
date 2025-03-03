@@ -21,6 +21,7 @@ resource "aws_iot_thing_group_membership" "accuenergy_device_group_membership" {
   for_each         = toset(var.smart_device_names)
   thing_name       = each.value
   thing_group_name = aws_iot_thing_group.accuenergy_device_group.name
+  depends_on       = [aws_iot_thing.smart_devices]
 }
 
 ###########################################################
@@ -102,25 +103,27 @@ resource "aws_iam_role" "iot_core_write_to_kinesis_device_stream_role" {
       },
     ]
   })
-  inline_policy {
-    name = "write_to_kinesis_device_stream_policy"
+}
 
-    policy = jsonencode({
-      Version = "2012-10-17"
-      Statement = [
-        {
-          Action   = ["kinesis:PutRecord"]
-          Effect   = "Allow"
-          Resource = var.device_data_stream_arn
-        },
-        {
-          Action   = ["kms:GenerateDataKey"]
-          Effect   = "Allow"
-          Resource = var.kinesis_kms_key_arn
-        }
-      ]
-    })
-  }
+resource "aws_iam_role_policy" "write_to_kinesis_device_stream_policy" {
+  name = "write_to_kinesis_device_stream_policy"
+  role = aws_iam_role.iot_core_write_to_kinesis_device_stream_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action   = ["kinesis:PutRecord"]
+        Effect   = "Allow"
+        Resource = var.device_data_stream_arn
+      },
+      {
+        Action   = ["kms:GenerateDataKey"]
+        Effect   = "Allow"
+        Resource = var.kinesis_kms_key_arn
+      }
+    ]
+  })
 }
 
 resource "aws_iot_topic_rule" "write_to_kinesis_device_data_stream_role" {

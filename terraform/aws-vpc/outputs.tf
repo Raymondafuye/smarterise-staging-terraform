@@ -1,19 +1,20 @@
+output "vpc_id" {
+  value = aws_vpc.this.id
+}
+
 output "private_subnets" {
-  value = module.vpc.private_subnets
+  value = aws_subnet.private[*].id
 }
 
 output "public_subnets" {
-  value = module.vpc.public_subnets
-}
-
-output "vpc_id" {
-  value = module.vpc.vpc_id
+  value = aws_subnet.public[*].id
 }
 
 output "vpc_cidr_block" {
-  value = module.vpc.vpc_cidr_block
+  value = aws_vpc.this.cidr_block
 }
 
 output "vpc_ipv6_cidr_block" {
-  value = module.vpc.vpc_ipv6_cidr_block
+  value = aws_vpc.this.ipv6_cidr_block
 }
+

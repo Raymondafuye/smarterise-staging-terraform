@@ -137,21 +137,21 @@ def create_col_if_not_exists(record_df: pd.DataFrame, cols: list[str]) -> pd.Dat
 
 
 def create_aurora_engine() -> sqlalchemy.engine:
-    """Creates SQLAlchemy engine for Aurora Data API
+    """Creates SQLAlchemy engine for RDS Postgres Data API
 
     Returns:
-        sqlalchemy.engine: SQLAlchemy engine
+        sqlalchemy.engine.Engine: SQLAlchemy engine
     """
-
-    cluster_arn = os.environ.get("CLUSTER_ARN")
-    secret_arn = os.environ.get("SECRET_ARN")
+    db_host = os.environ.get("DB_HOST")  # RDS Endpoint (e.g., 'your-db-instance.rds.amazonaws.com')
+    db_name = os.environ.get("DB_NAME", "smartmeters")  # Default database name
+    db_user = os.environ.get("DB_USER")  # Username
+    db_password = os.environ.get("DB_PASSWORD")  # Password
+    db_port = os.environ.get("DB_PORT", "5432")  # Default PostgreSQL port
 
     engine = sqlalchemy.create_engine(
-        "postgresql+auroradataapi://:@/smartmeters",
-        echo=True,
-        connect_args=dict(aurora_cluster_arn=cluster_arn, secret_arn=secret_arn),
+        f"postgresql+psycopg2://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}",
+        echo=True
     )
-
     return engine
 
 

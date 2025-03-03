@@ -1,25 +1,26 @@
-variable "rds_postgresql_cluster_username" {
-  description = "master username for RDS postgresql cluster"
+variable "rds_postgresql_username" {
+  description = "Master username for RDS PostgreSQL instance"
   type        = string
   default     = "dbadmin"
 }
 
-variable "private_subnets" {
-  description = "private subnets"
+variable "public_subnets" {
+  description = "List of private subnet IDs"
   type        = list(string)
 }
 
 variable "vpc_cidr_block" {
-  description = "cidr block from VPC"
+  description = "CIDR block for the VPC"
   type        = string
+  default     = "0.0.0.0/0"
 }
 
 variable "vpc_ipv6_cidr_block" {
-  description = "IPV6 cidr block from VPC"
+  description = "IPv6 CIDR block for the VPC"
   type        = string
 }
 
 variable "vpc_id" {
-  description = "id from VPC"
+  description = "VPC ID where the RDS instance will be deployed"
   type        = string
 }

@@ -90,7 +90,7 @@ data "aws_iam_policy_document" "rds_data_api_iam_policy_document" {
     ]
     effect = "Allow"
     resources = [
-      var.rds_cluster_arn
+      var.rds_instance_arn
     ]
   }
 }

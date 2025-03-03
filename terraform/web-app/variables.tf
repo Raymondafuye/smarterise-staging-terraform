@@ -1,7 +1,7 @@
 variable "web_app_bucket_name" {
   description = "Name of the S3 Bucket for the Web App"
   type        = string
-  default     = "smarterise-web-app-dev"
+  default     = "smarterise-web-app-dev-dev"
 }
 
 variable "smarterise_domain_root" {

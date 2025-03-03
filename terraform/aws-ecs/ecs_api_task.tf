@@ -24,18 +24,18 @@ resource "aws_security_group" "api_service_sg" {
 
   # Allow all egress
   egress = [
-    {
-      description      = "Allow all egress"
-      from_port        = 0
-      to_port          = 0
-      protocol         = "-1"
-      cidr_blocks      = ["0.0.0.0/0"]
-      ipv6_cidr_blocks = ["::/0"]
-      prefix_list_ids  = []
-      security_groups  = []
-      self             = false
-    }
-  ]
+  {
+    description      = "Allow all egress"
+    from_port        = 0
+    to_port          = 0
+    protocol         = "-1"
+    cidr_blocks      = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
+    prefix_list_ids  = []
+    security_groups  = []
+    self             = false
+  }
+]
 }
 
 
@@ -54,16 +54,16 @@ resource "aws_ecs_service" "api_service" {
 
   launch_type = "FARGATE"
   network_configuration {
-    subnets          = var.private_subnets
+    subnets          = [var.private_subnets[0]]
     security_groups  = [aws_security_group.api_service_sg.id]
-    assign_public_ip = false
+    assign_public_ip = true
   }
 }
 
 resource "aws_ecs_task_definition" "api_service_task_definition" {
   family                   = "api_service_${var.environment}"
-  cpu                      = 2048
-  memory                   = 4096
+  cpu                      = 256
+  memory                   = 512
   network_mode             = "awsvpc"
   task_role_arn            = "arn:aws:iam::${var.aws_account_id}:role/ecsTaskExecutionRole${var.environment}"
   execution_role_arn       = "arn:aws:iam::${var.aws_account_id}:role/ecsTaskExecutionRole${var.environment}"
@@ -74,7 +74,7 @@ resource "aws_ecs_task_definition" "api_service_task_definition" {
       name      = "api_service"
       image     = "${var.aws_account_id}.dkr.ecr.${var.region}.amazonaws.com/${var.api_image_repository_name}:${var.api_service_image_tag}"
       essential = true
-      cpu       = 512
+      cpu       = 256
 
       portMappings = [
         {
@@ -90,68 +90,75 @@ resource "aws_ecs_task_definition" "api_service_task_definition" {
           "awslogs-region"        = var.region,
           "awslogs-stream-prefix" = "ecs"
         }
-      }
-      environment = [
-        # Follow the pattern below to add items
-        # {
-        #   "value"     = "abc",
-        #   "name"      = "LOG_LEVEL"
-        # },
-        {
-          "name" : "DJANGO_DEBUG"
-          "value" : "true"
-        },
-        {
-          "name" : "DJANGOENV"
-          "value" : "development"
-        },
-        {
-          "name" : "DJANGO_SETTINGS_MODULE"
-          "value" : "main.development.settings"
-        },
-        {
-          "name" : "DJANGO_ALLOWED_HOSTS"
-          "value" : "*"
-        },
-        {
-          "name" : "AWS_ARN_RESOURCE"
-          "value" : var.rds_cluster_arn
-        },
-        {
-          "name" : "AWS_SECRET_ARN"
-          "value" : var.rds_cluster_secret_arn
-        },
-        {
-          "name" : "AWS_RDS_DATABASE"
-          "value" : "smartmeters"
-        },
-        {
-          "name" : "AWS_DEFAULT_REGION"
-          "value" : "eu-west-2"
-        },
-        {
-          "name" : "DJANGO_CORS_ALLOW_ALL_ORIGINS"
-          "value" : "True"
-        },
-        {
-          "name" : "AUTH0_DOMAIN"
-          "value" : "dev-u0pz-ez1.eu.auth0.com"
-        },
-        {
-          "name" : "API_IDENTIFIER"
-          "value" : "test api for perms"
-        }
-      ],
+      },
+    "environment": [
+                {
+                    "name": "AUTH0_CLIENT_SECRET",
+                    "value": "bRnKn_YngcUU3B-rJr9M7YpcH-0KXYLthU0uFczQnnjY2RuWeFLr-j3GYAp-HbRa"
+                },
+                {
+                    "name": "AWS_ARN_RESOURCE",
+                    "value": "arn:aws:rds:eu-west-2:794038252750:db:postgresql-instance"
+                },
+                {
+                    "name": "AWS_SECRET_ACCESS_KEY",
+                    "value": "4l5+xPX8eOd/2y2zc/xQHxBx6sqv8w53ZUo+BjFT"
+                },
+                {
+                    "name": "AWS_DEFAULT_REGION",
+                    "value": "eu-west-2"
+                },
+                {
+                    "name": "DJANGO_DEBUG",
+                    "value": "true"
+                },
+                {
+                    "name": "AUTH0_DOMAIN",
+                    "value": "dev-mgw72jpas4obd84e.us.auth0.com"
+                },
+                {
+                    "name": "DJANGO_CORS_ALLOW_ALL_ORIGINS",
+                    "value": "True"
+                },
+                {
+                    "name": "DJANGO_SETTINGS_MODULE",
+                    "value": "main.development.settings"
+                },
+                {
+                    "name": "DJANGOENV",
+                    "value": "development"
+                },
+                {
+                    "name": "AUTH0_CLIENT_ID",
+                    "value": "C0NFrNh6Ur774Zxu3l8fHDwWZSAf5CEA"
+                },
+                {
+                    "name": "DJANGO_ALLOWED_HOSTS",
+                    "value": "*"
+                },
+                {
+                    "name": "API_IDENTIFIER",
+                    "value": "https://api.dev.demo.powersmarter.net/"
+                },
+                {
+                    "name": "AWS_ACCESS_KEY_ID",
+                    "value": "AKIA3RYC6GTHC5CLYKVT"
+                },
+                {
+                    "name": "AWS_SECRET_ARN",
+                    "value": "arn:aws:secretsmanager:eu-west-2:794038252750:secret:rds-credentials-postgresql-instance-lkvYFL"
+                },
+                {
+                    "name": "AWS_RDS_DATABASE",
+                    "value": "smartmeters"
+                }
+            ],
       secrets = [
-        # {
-        #   "valueFrom" = "${aws_secretsmanager_secret.api_service.arn}:LOG_LEVEL::",
-        #   "name"      = "LOG_LEVEL"
-        # },
-        {
-          "name" : "DJANGO_DEFAULT_DATABASE"
-          "valueFrom" : "${var.rds_connection_string_secret_arn}:connection_string::"
-        },
-      ]
+  {
+    name      = "DJANGO_DEFAULT_DATABASE"
+    valueFrom = "${var.rds_connection_string_secret_arn}:connection_string::"
+  }
+]
     }
     ]
   )

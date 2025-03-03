@@ -1,19 +1,7 @@
-terraform {
-  backend "s3" {
-    bucket         = "smarterise-infra-euw2"
-    key            = "smarterise"
-    region         = "eu-west-2"
-    dynamodb_table = "smarterise-infra-lock-euw2"
-  }
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "4.24.0"
-    }
-  }
-  required_version = ">= 1.0.0"
-}
 
 provider "aws" {
+  access_key = "AKIA3RYC6GTHC5CLYKVT"
+  secret_key = "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"
   region = "eu-west-2"
+
 }

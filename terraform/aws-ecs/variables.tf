@@ -36,7 +36,7 @@ variable "vpc_id" {
 variable "log_retention_in_days" {
   description = "Log retention in days for this service"
   type        = number
-  default     = 90
+  default     = 30
 }
 
 variable "api_service_image_tag" {
@@ -55,11 +55,11 @@ variable "smarterise_dns_zone_id" {
   description = "The zone ID of the demo dns zone"
 }
 
-variable "rds_cluster_arn" {
+variable "rds_instance_arn" {
   type        = string
   description = "ARN of the RDS Cluster"
 }
-variable "rds_cluster_secret_arn" {
+variable "rds_credentials_secret_arn" {
   type        = string
   description = "ARN of the RDS Cluster Secrets"
 }

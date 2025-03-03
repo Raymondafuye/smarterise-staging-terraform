@@ -1,21 +1,19 @@
 ## lambda layers
-
 resource "aws_lambda_layer_version" "aws_wrangler" {
-  filename   = "${path.module}/../../awswrangler-layer-2.16.1-py3.9.zip"
+  filename   = "${path.module}/../../lambda/awswrangler-layer-2.16.1-py3.9.zip"
   layer_name = var.lambda_layer_aws_wrangler_name
-
   compatible_runtimes = ["python3.9"]
 }
 
 resource "aws_lambda_layer_version" "flattenjson" {
-  filename   = "${path.module}/../../flattenjson.zip"
+  filename   = "${path.module}/../../lambda/flattenjson.zip"
   layer_name = var.lambda_layer_flattenjson_name
 
   compatible_runtimes = ["python3.9"]
 }
 
 resource "aws_lambda_layer_version" "sqlalchemy" {
-  filename   = "${path.module}/../../sqlalchemy.zip"
+  filename   = "${path.module}/../../lambda/sqlalchemy.zip"
   layer_name = var.lambda_layer_sqlalchemy_aurora_data_api_name
 
   compatible_runtimes = ["python3.9"]
@@ -76,6 +74,16 @@ module "smart_device_to_rds_lambda_function" {
     "${path.module}/../../lambda/smart-device-to-rds/lambda_function.py",
     "${path.module}/../../lambda/smart-device-to-rds/config.py",
   ]
+
+  
+
+  environment_variables = {
+    DB_HOST     = var.rds_endpoint
+    DB_NAME     = var.rds_db_name
+    DB_USER     = var.rds_username
+    DB_PASSWORD = var.rds_password
+    DB_PORT     = "5432"
+  }
 
   recreate_missing_package = false
   ignore_source_code_hash  = true
@@ -163,7 +171,7 @@ resource "aws_cloudwatch_event_rule" "schedule_connect_to_aurora" {
   name                = var.schedule_connect_to_aurora_name
   description         = "Schedule Lambda function execution for connect to aurora lambda"
   schedule_expression = "cron(00 23 */6 * ? *)"
-  is_enabled          = true
+  state = "ENABLED" 
 }
 
 

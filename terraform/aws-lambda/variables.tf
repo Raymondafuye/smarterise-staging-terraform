@@ -61,16 +61,17 @@ variable "smart_device_to_rds_lambda_name" {
 }
 
 variable "smart_deivce_to_rds_env_vars" {
-  type        = map(any)
+  type        = map(string)
   description = "environment variables for smart device to rds lambda"
+  default = {}
 }
 
-variable "rds_cluster_arn" {
+variable "rds_instance_arn" {
   type        = string
   description = "arn of the rds cluster"
 }
 
-variable "rds_cluster_secret_arn" {
+variable "rds_credentials_secret_arn" {
   type        = string
   description = "arn of the rds cluster secret"
 }
@@ -85,3 +86,25 @@ variable "connect_to_aurora_lambda_function_env_vars" {
   type        = map(any)
   description = "env vars for the connect to aurora lambda function"
 }
+
+variable "rds_endpoint" {
+  description = "RDS endpoint"
+  type        = string
+}
+
+variable "rds_db_name" {
+  description = "RDS database name"
+  type        = string
+}
+
+variable "rds_username" {
+  description = "RDS username"
+  type        = string
+}
+
+variable "rds_password" {
+  description = "RDS password"
+  type        = string
+  sensitive   = true
+}
+

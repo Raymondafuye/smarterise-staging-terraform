@@ -1,28 +1,53 @@
-resource "aws_db_subnet_group" "rds_subnet_group" {
-  subnet_ids = var.private_subnets
+resource "random_password" "master" {
+  length  = 16
+  special = true
 }
 
-resource "aws_rds_cluster" "rds_postgresql_cluster" {
-  cluster_identifier      = "rds-postgresql-cluster"
-  db_subnet_group_name    = aws_db_subnet_group.rds_subnet_group.name
-  engine                  = "aurora-postgresql"
-  engine_mode             = "serverless"
-  engine_version          = "11.16"
-  database_name           = "smartmeters"
-  master_username         = var.rds_postgresql_cluster_username
-  master_password         = jsondecode(aws_secretsmanager_secret_version.rds_cluster_master_password.secret_string)["password"]
+resource "aws_db_instance" "rds_postgresql" {
+  identifier           = "postgresql-instance"
+  engine              = "postgres"
+  engine_version      = "14"
+  instance_class      = "db.t3.micro"
+  allocated_storage   = 20
+  storage_type        = "gp2"
+  
+  db_name             = "mydb"
+  username            = var.rds_postgresql_username
+  password            = random_password.master.result
+  
+  db_subnet_group_name = aws_db_subnet_group.rds_subnet_group.name
+  vpc_security_group_ids = [aws_security_group.rds_sg.id]
+  
+  skip_final_snapshot = true
+  publicly_accessible = true
+  apply_immediately  = true   # To apply changes immediately
+  
   backup_retention_period = 7
-  storage_encrypted       = true
-  enable_http_endpoint    = true
-  skip_final_snapshot     = true
-  apply_immediately       = true
+  backup_window          = "03:00-04:00"
+  maintenance_window     = "Mon:04:00-Mon:05:00"
+}
 
-  scaling_configuration {
-    auto_pause               = true
-    max_capacity             = 64
-    min_capacity             = 4
-    seconds_until_auto_pause = 300
-    timeout_action           = "ForceApplyCapacityChange"
+resource "aws_db_subnet_group" "rds_subnet_group" {
+  name       = "rds-subnet-group-new"
+  subnet_ids = var.public_subnets
+}
+
+resource "aws_security_group" "rds_sg" {
+  name        = "rds-security-group"
+  description = "Security group for RDS PostgreSQL"
+  vpc_id      = var.vpc_id
+
+  ingress {
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
-  vpc_security_group_ids = [aws_security_group.rds_security_group.id]
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 }

@@ -11,7 +11,7 @@ variable "iot_device_certificate_bucket_name" {
 variable "datalake_raw_storage_bucket_name" {
   description = "datalake raw s3 bucket name"
   type        = string
-  default     = "smarterise-datalake-raw-dev"
+  default     = "smarterise-datalake-raw-dev1"
 }
 
 variable "rds_state_bucket_name" {

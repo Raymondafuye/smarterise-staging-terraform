@@ -1,32 +1,24 @@
-resource "random_password" "master" {
-  length           = 16
-  special          = true
-  override_special = "_!%^"
-}
-
-resource "aws_secretsmanager_secret" "rds_cluster_master_password" {
-  name = "rds-cluster-master-password"
+resource "aws_secretsmanager_secret" "rds_credentials" {
+  name = "rds-credentials-${aws_db_instance.rds_postgresql.identifier}"
 }
 
 resource "aws_secretsmanager_secret_version" "rds_cluster_master_password" {
-  secret_id = aws_secretsmanager_secret.rds_cluster_master_password.id
-  secret_string = jsonencode(
-    {
-      username = var.rds_postgresql_cluster_username
-      password = random_password.master.result
-    }
-  )
+  secret_id = aws_secretsmanager_secret.rds_credentials.id
+  secret_string = jsonencode({
+    username = aws_db_instance.rds_postgresql.username
+    password = random_password.master.result
+    engine   = "postgres"
+    host     = aws_db_instance.rds_postgresql.endpoint
+  })
 }
 
 resource "aws_secretsmanager_secret" "rds_connection_string" {
-  name = "rds-connection-string"
+  name = "rds-connection-string-${aws_db_instance.rds_postgresql.identifier}"
 }
 
 resource "aws_secretsmanager_secret_version" "rds_connection_string_secret_version" {
   secret_id = aws_secretsmanager_secret.rds_connection_string.id
-  secret_string = jsonencode(
-    {
-      connection_string = "postgres://${aws_rds_cluster.rds_postgresql_cluster.master_username}:${aws_rds_cluster.rds_postgresql_cluster.master_password}@${aws_rds_cluster.rds_postgresql_cluster.endpoint}/${aws_rds_cluster.rds_postgresql_cluster.database_name}"
-    }
-  )
+  secret_string = jsonencode({
+    connection_string = "postgres://${aws_db_instance.rds_postgresql.username}:${random_password.master.result}@${aws_db_instance.rds_postgresql.endpoint}/${aws_db_instance.rds_postgresql.db_name}"
+  })
 }

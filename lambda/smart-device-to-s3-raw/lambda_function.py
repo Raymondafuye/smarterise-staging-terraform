@@ -173,29 +173,46 @@ def cast_datatypes(filtered_df: pd.DataFrame, schema: dict, units: dict) -> pd.D
     return filtered_df
 
 
+
 def find_format_and_table(record: pd.DataFrame, _config=config.config) -> tuple[str, str]:
-    """Look in config for matching format and it's target table."""
-
+    """
+    Validates an incoming record against the configuration to determine its format and target table.
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+    
     logger.info("Finding if record matches any formats:")
+    logger.info(f"Validating record with device model: {record.get('device_model')}")
+    logger.debug(f"Incoming record: {record}")  # Be careful with sensitive data
+
+    # Iterate through tables and their format types in the config
     for table, properties in _config.items():
-        for _format, details in properties["format_types"].items():
-
-            unique_features = details["unique_features"]
-
+        for _format, details in properties.get("format_types", {}).items():
+            unique_features = details.get("unique_features", {})
             format_ok = True
-            if "num_columns" in unique_features.keys():
-                if len(record.keys()) != unique_features["num_columns"]:
+
+            # Validate the number of columns
+            if "num_columns" in unique_features:
+                num_columns = len(record.keys())
+                expected_columns = unique_features["num_columns"]
+                logger.info(f"Validating column count: Found {num_columns}, Expected {expected_columns}")
+                if num_columns != expected_columns:
                     format_ok = False
-            if "has_columns" in unique_features.keys():
-                for column in unique_features["has_columns"]:
-                    if column not in record.keys():
-                        format_ok = False
+                    logger.warning(f"Column count mismatch for format {_format}: Expected {expected_columns}, Found {num_columns}")
+
+            # Validate required columns
+            if "has_columns" in unique_features:
+                required_columns = unique_features["has_columns"]
+                missing_columns = [col for col in required_columns if col not in record.keys()]
+                if missing_columns:
+                    format_ok = False
+                    logger.warning(f"Missing required columns for format {_format}: {missing_columns}")
 
             if format_ok:
-                logger.info("\tFormat: " + _format + " detected for table " + table + ".")
+                logger.info(f"Format {_format} detected for table {table}.")
                 return _format, table
 
-    raise AttributeError("\tThis record doesn't match any formats in the config:" + str(record))
+    raise AttributeError(f"This record doesn't match any formats in the config: {record}")
 
 
 def deserialize_record(record) -> dict:
@@ -371,7 +388,7 @@ if __name__ == "__main__":
     shard_iterator = client.get_shard_iterator(
         StreamName="device-data-stream",
         ShardId="shardId-000000000000",
-        ShardIteratorType="LATEST",
+        ShardIteratorType="AT_TIMESTAMP",
     )["ShardIterator"]
 
     num_errors = 0
@@ -394,7 +411,7 @@ if __name__ == "__main__":
                 shard_iterator = client.get_shard_iterator(
                     StreamName="device-data-stream",
                     ShardId="shardId-000000000000",
-                    ShardIteratorType="LATEST",
+                    ShardIteratorType="AT_TIMESTAMP",
                 )["ShardIterator"]
             else:
                 raise e
