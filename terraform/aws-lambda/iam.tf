@@ -51,6 +51,7 @@ data "aws_iam_policy_document" "iam_policy_document" {
     sid = ""
     actions = [
       "kinesis:DescribeStream",
+      "kinesis:PutRecord",
       "kinesis:DescribeStreamSummary",
       "kinesis:GetRecords",
       "kinesis:GetShardIterator",

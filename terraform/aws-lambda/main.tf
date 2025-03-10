@@ -4,6 +4,13 @@ resource "aws_lambda_layer_version" "aws_wrangler" {
   layer_name = var.lambda_layer_aws_wrangler_name
   compatible_runtimes = ["python3.9"]
 }
+#rds layer
+resource "aws_lambda_layer_version" "aws_pandas" {
+  filename   = "${path.module}/../../lambda/python-pandas-409f5c86-0121-4a8b-b083-84238a2d672a.zip"
+  layer_name = var.lambda_layer_aws_pandas_name
+  compatible_runtimes = ["python3.12"]
+}
+
 
 resource "aws_lambda_layer_version" "flattenjson" {
   filename   = "${path.module}/../../lambda/flattenjson.zip"
@@ -15,8 +22,8 @@ resource "aws_lambda_layer_version" "flattenjson" {
 resource "aws_lambda_layer_version" "sqlalchemy" {
   filename   = "${path.module}/../../lambda/sqlalchemy.zip"
   layer_name = var.lambda_layer_sqlalchemy_aurora_data_api_name
-
-  compatible_runtimes = ["python3.9"]
+  compatible_runtimes = ["python3.12"]
+  compatible_architectures = ["x86_64"] # Added compatible architectures
 }
 
 # resource "aws_lambda_layer_version" "catboost" {
@@ -40,8 +47,10 @@ module "smart_device_to_s3_raw_lambda_function" {
     "${path.module}/../../lambda/smart-device-to-s3-raw/lambda_function.py",
     "${path.module}/../../lambda/smart-device-to-s3-raw/config.py",
   ]
-
-  environment_variables    = var.smart_device_to_s3_raw_lambda_function_env_vars
+    environment_variables = merge(
+    var.smart_device_to_s3_raw_lambda_function_env_vars,
+    { PARSED_DEVICE_KINESIS_DATA_STREAM_NAME = var.device_kinesis_data_stream_name }
+  )
   recreate_missing_package = false
   ignore_source_code_hash  = true
   create_role              = false
@@ -58,6 +67,7 @@ resource "aws_lambda_event_source_mapping" "lambda_smart_device_to_s3_event_mapp
   parallelization_factor             = 5
   maximum_retry_attempts             = 5
   bisect_batch_on_function_error     = true
+ 
 }
 
 module "smart_device_to_rds_lambda_function" {
@@ -66,20 +76,24 @@ module "smart_device_to_rds_lambda_function" {
 
   function_name = var.smart_device_to_rds_lambda_name
   handler       = "lambda_function.lambda_handler"
-  runtime       = "python3.9"
+  runtime       = "python3.12"
   timeout       = "600"
-  layers        = [aws_lambda_layer_version.aws_wrangler.arn, aws_lambda_layer_version.flattenjson.arn, aws_lambda_layer_version.sqlalchemy.arn]
+
+  layers = [
+    "arn:aws:lambda:eu-west-2:794038252750:layer:python-pandas:4",
+    "arn:aws:lambda:eu-west-2:794038252750:layer:sqlchemy:1"
+  ]
+
+
 
   source_path = [
     "${path.module}/../../lambda/smart-device-to-rds/lambda_function.py",
     "${path.module}/../../lambda/smart-device-to-rds/config.py",
   ]
 
-  
-
   environment_variables = merge(
     {
-      DB_HOST     = var.rds_endpoint
+      DB_HOST     = split(":", var.rds_endpoint)[0]
       DB_NAME     = var.rds_db_name
       DB_USER     = var.rds_username
       DB_PASSWORD = var.rds_password

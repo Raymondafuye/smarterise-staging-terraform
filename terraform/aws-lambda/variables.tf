@@ -4,6 +4,19 @@ variable "lambda_layer_aws_wrangler_name" {
   default     = "python-awswrangler"
 }
 
+ variable "lambda_layer_aws_pandas_name"{
+  description = "Name for the Lambda Layer for AWS Pandas library"
+  type        = string
+  default     = "python-pandas"
+ }
+
+  variable "lambda_layer_aws_package1_name"{
+  description = "Name for the Lambda Layer for AWS Pandas library"
+  type        = string
+  default     = "package1"
+ }
+
+
 variable "lambda_layer_flattenjson_name" {
   description = "Name for the Lambda Layer for flattenjson library"
   type        = string
@@ -34,9 +47,16 @@ variable "smart_device_to_s3_raw_lambda_function_env_vars" {
   type        = map(any)
 }
 
+variable "device_kinesis_data_stream_name" {
+  description = "The name of the Kinesis Data Stream"
+  type        = string
+  default     = "parsed-device-data-stream"
+}
+
 variable "device_kinesis_data_stream_arn" {
   description = "arn for the kinesis data stream that streams data from the smart devices"
   type        = string
+  
 }
 
 variable "datalake_raw_bucket_arn" {

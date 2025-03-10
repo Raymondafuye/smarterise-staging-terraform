@@ -12,8 +12,8 @@ resource "aws_security_group" "alb_seg" {
 
   ingress {
     protocol         = "tcp"
-    from_port        = 80
-    to_port          = 80
+    from_port        = 8000
+    to_port          = 8000
     cidr_blocks      = ["0.0.0.0/0"]
     ipv6_cidr_blocks = ["::/0"]
   }
@@ -44,11 +44,11 @@ resource "aws_lb_target_group" "alb_api_service_tg" {
 
   health_check {
     healthy_threshold   = "3"
-    interval            = "5"
+    interval            = "10"
     protocol            = "HTTP"
     port                = 8000
     matcher             = "200"
-    timeout             = "3"
+    timeout             = "5"
     path                = "/health-check"
     unhealthy_threshold = "3"
   }
