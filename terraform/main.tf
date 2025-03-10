@@ -111,11 +111,12 @@ module "aws-vpc" {
   availability_zones   = ["eu-west-2a", "eu-west-2b"]  # Change these to match your region
 }
 
-module "aws-sagemaker" {
-  source                                 = "./aws-sagemaker"
-  datalake_raw_bucket_arn                = module.s3.datalake_raw_bucket_arn
-  datalake_raw_athena_results_bucket_arn = module.s3.datalake_raw_athena_results_bucket_arn
-}
+#module "aws-sagemaker" {
+#  source                                 = "./aws-sagemaker"
+#  datalake_raw_bucket_arn                = module.s3.datalake_raw_bucket_arn
+#  datalake_raw_athena_results_bucket_arn = module.s3.datalake_raw_athena_results_bucket_arn
+#}
+
 module "meta" {
   source = "./meta"
 }
