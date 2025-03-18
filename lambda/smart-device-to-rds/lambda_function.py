@@ -5,17 +5,26 @@ import os
 import random
 import string
 import sys
-
+import psycopg2
 import boto3
 import config
 import pandas as pd
+import pytz
 import sqlalchemy
-from flatten_json import flatten
+from config import cols_for_rds 
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 RUNTIME = "cloud"  # or 'local'
+
+# RDS connection details from environment variables
+rds_host = os.environ.get("DB_HOST")
+rds_database = os.environ.get("DB_NAME", "smartmeters")
+rds_username = os.environ.get("DB_USER")
+rds_password = os.environ.get("DB_PASSWORD")
+rds_port = os.environ.get("DB_PORT", "5432")
+rds_table = "smart_device_readings"  # Update this if necessary
 
 
 def save_dataframe(df: pd.DataFrame, table: str, con: sqlalchemy.engine.Connection, **kwargs):
@@ -135,37 +144,104 @@ def create_col_if_not_exists(record_df: pd.DataFrame, cols: list[str]) -> pd.Dat
 
     return record_df
 
+def insert_into_rds(df: pd.DataFrame) -> None:
+    """Insert DataFrame into RDS."""
+    #logger.info(f"Original columns in DataFrame: {df.columns.tolist()}")
 
-def create_aurora_engine() -> sqlalchemy.engine:
-    """Creates SQLAlchemy engine for RDS Postgres Data API
+    
+    if 'timestamp' in df.columns:
+        df['timestamp'] = pd.to_datetime(df['timestamp'], errors='coerce')
+        # Check if timestamp is timezone-aware
+        if df['timestamp'].dt.tz is None:
+            # If naive, first localize to UTC then convert to Lagos
+            lagos_tz = pytz.timezone("Africa/Lagos")
+            df["timestamp"] = df["timestamp"].dt.tz_localize("UTC").dt.tz_convert(lagos_tz)
+        elif df['timestamp'].dt.tz.zone != 'Africa/Lagos':
+            # If already timezone-aware but not in Lagos time, convert to Lagos
+            lagos_tz = pytz.timezone("Africa/Lagos")
+            df["timestamp"] = df["timestamp"].dt.tz_convert(lagos_tz)
+        # Add 1 hour to fix the time difference
+        df["timestamp"] = df["timestamp"] + pd.Timedelta(hours=1)
+        # Now extract month and year from Lagos time
+        df['month'] = df['timestamp'].dt.month
+        df['year'] = df['timestamp'].dt.year
+    else:
+        logger.error("Missing 'timestamp' column in DataFrame!")
+        df['month'] = None
+        df['year'] = None
 
-    Returns:
-        sqlalchemy.engine.Engine: SQLAlchemy engine
-    """
-    db_host = os.environ.get("DB_HOST")  # RDS Endpoint (e.g., 'your-db-instance.rds.amazonaws.com')
-    db_name = os.environ.get("DB_NAME", "smartmeters")  # Default database name
-    db_user = os.environ.get("DB_USER")  # Username
-    db_password = os.environ.get("DB_PASSWORD")  # Password
-    db_port = os.environ.get("DB_PORT", "5432")  # Default PostgreSQL port
+    required_columns = list(cols_for_rds.keys())
+    for col in required_columns:
+        if col not in df.columns:
+            logger.warning(f"Missing column: {col}, creating with default value.")
+            df[col] = None  
 
-    engine = sqlalchemy.create_engine(
-        f"postgresql+psycopg2://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}",
-        echo=True
-    )
-    return engine
+    missing_cols = set(required_columns) - set(df.columns)
+    if missing_cols:
+        logger.error(f"Missing required columns before selection: {missing_cols}")
+        raise KeyError(f"Missing columns: {missing_cols}")
 
+    df = df[required_columns]
+    #logger.info(f"FINAL DATA TO INSERT - Sample (first 3 rows):")
+    #logger.info(df.head(3).to_dict('records'))
 
+    logger.info(f"Preparing to insert {df.shape[0]} records into {rds_table}")
+    try:
+        connection = psycopg2.connect(
+            host=rds_host,
+            user=rds_username,
+            password=rds_password,
+            database=rds_database,
+            port=rds_port
+        )
+        logger.info("SUCCESS: Connection to RDS Postgres instance succeeded")
+    except psycopg2.Error as e:
+        logger.error("ERROR: Could not connect to Postgres instance.")
+        logger.error(e)
+        return
+    try:
+        with connection.cursor() as cursor:
+            columns = ', '.join([f'"{col}"' for col in df.columns])
+            values_placeholder = ', '.join(['%s'] * len(df.columns))
+
+            sql = f"""
+                INSERT INTO {rds_table} ({columns})
+                VALUES ({values_placeholder})
+            """
+            for _, row in df.iterrows():
+                cursor.execute(sql, tuple(row))
+
+            connection.commit()
+            logger.info(f"{df.shape[0]} records inserted successfully")
+
+    except psycopg2.Error as e:
+        logger.error("ERROR: Failed to insert data into PostgreSQL table.")
+        logger.error(e)
+    finally:
+        if connection:
+            connection.close()
+            logger.info("PostgreSQL connection is closed")        
+
+            
 def lambda_handler(event, context) -> None:
-    logger.info("Runtime:" + str(RUNTIME))
-    logger.info("Started processing event...")
-
     successful_records = []
     failed_records = []
+
     for record in event["Records"]:
         try:
             payload = deserialize_record(record)
-
             record_df = pd.DataFrame.from_dict(payload)
+            
+            # Convert timestamp and create date column
+            record_df["timestamp"] = pd.to_datetime(record_df["timestamp"], unit="ms")
+            wat_tz = pytz.timezone('Africa/Lagos')  # WAT timezone
+            record_df["timestamp"] = record_df["timestamp"].dt.tz_localize("UTC").dt.tz_convert(wat_tz)
+            #print("converted")
+            #print(record_df["timestamp"])
+            record_df["date"] = record_df["timestamp"].dt.date
+
+            #logger.info(f"PROCESSED DATA  timestamps:")
+            #logger.info(record_df["timestamp"].head(2).to_list())
             successful_records.append(record_df)
             logger.info("Record successfully handled.")
 
@@ -173,34 +249,20 @@ def lambda_handler(event, context) -> None:
             failed_records.append(record)
             logger.error(e)
 
-    successful_records_df = pd.concat(successful_records)
-    successful_records_df["timestamp"] = pd.to_datetime(successful_records_df["timestamp"], unit="ms")
-    successful_records_df["date"] = successful_records_df["timestamp"].dt.date
+    if successful_records:
+        successful_records_df = pd.concat(successful_records)
+        
+        # Log the shape and columns of the DataFrame
+        #logger.info(f"DataFrame shape before processing: {successful_records_df.shape}")
+        #logger.info(f"Columns before processing: {successful_records_df.columns.tolist()}")
+        
+        try:
+            insert_into_rds(successful_records_df)
+        except Exception as e:
+            logger.error(f"Error inserting into RDS: {str(e)}")
+            raise e
 
-    successful_records_copy = successful_records_df.copy()
-
-    cols_for_rds = config.cols_for_rds
-
-    successful_records = create_col_if_not_exists(successful_records_copy, cols_for_rds)[cols_for_rds]
-
-    engine = create_aurora_engine()
-
-    logger.info(f"shape: {successful_records.shape}")
-
-    with engine.connect() as conn:
-
-        logger.info("Ingesting data... ")
-
-        save_dataframe(
-            successful_records,
-            table="smart_device_readings",
-            con=conn,
-            if_exists="append",
-            index=False,
-            dtype=cols_for_rds,
-        )
-
-    engine.dispose()
+    logger.info("Lambda execution completed.")
 
 
 if __name__ == "__main__":
@@ -244,3 +306,4 @@ if __name__ == "__main__":
                 )["ShardIterator"]
             else:
                 raise e
+

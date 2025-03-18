@@ -36,7 +36,7 @@ resource "aws_lambda_layer_version" "sqlalchemy" {
 module "smart_device_to_s3_raw_lambda_function" {
   source  = "terraform-aws-modules/lambda/aws"
   version = "4.0.2"
-
+  cloudwatch_logs_retention_in_days = 1
   function_name = var.smart_device_to_s3_raw_lambda_name
   handler       = "lambda_function.lambda_handler"
   runtime       = "python3.9"
@@ -73,6 +73,7 @@ resource "aws_lambda_event_source_mapping" "lambda_smart_device_to_s3_event_mapp
 module "smart_device_to_rds_lambda_function" {
   source  = "terraform-aws-modules/lambda/aws"
   version = "4.0.2"
+  cloudwatch_logs_retention_in_days = 1
 
   function_name = var.smart_device_to_rds_lambda_name
   handler       = "lambda_function.lambda_handler"
@@ -83,8 +84,6 @@ module "smart_device_to_rds_lambda_function" {
     "arn:aws:lambda:eu-west-2:794038252750:layer:python-pandas:4",
     "arn:aws:lambda:eu-west-2:794038252750:layer:sqlchemy:1"
   ]
-
-
 
   source_path = [
     "${path.module}/../../lambda/smart-device-to-rds/lambda_function.py",
@@ -121,88 +120,88 @@ resource "aws_lambda_event_source_mapping" "lambda_smart_device_to_rds_event_map
 
 }
 
-module "invoke_ml_model" {
-  source  = "terraform-aws-modules/lambda/aws"
-  version = "4.0.2"
+#module "invoke_ml_model" {
+#  source  = "terraform-aws-modules/lambda/aws"
+#  version = "4.0.2"
 
-  function_name = "invoke-ml-model"
-  handler       = "lambda_function.lambda_handler"
-  runtime       = "python3.9"
-  timeout       = "600"
-  layers        = [aws_lambda_layer_version.aws_wrangler.arn] #aws_lambda_layer_version.catboost.arn]
+#  function_name = "invoke-ml-model"
+#  handler       = "lambda_function.lambda_handler"
+#  runtime       = "python3.9"
+#  timeout       = "600"
+#  layers        = [aws_lambda_layer_version.aws_wrangler.arn] #aws_lambda_layer_version.catboost.arn]
 
-  source_path = [
-    "${path.module}/../../lambda/invoke-ml-model/lambda_function.py",
-    # "${path.module}/../../lambda/invoke-ml-model/apapa_model",
-  ]
+#  source_path = [
+#    "${path.module}/../../lambda/invoke-ml-model/lambda_function.py",
+#    # "${path.module}/../../lambda/invoke-ml-model/apapa_model",
+#  ]
 
-  recreate_missing_package = false
-  ignore_source_code_hash  = true
-  create_role              = false
-  lambda_role              = aws_iam_role.iam_for_lambda.arn
-  memory_size              = 1024
-  maximum_retry_attempts   = 5
-}
+#  recreate_missing_package = false
+#  ignore_source_code_hash  = true
+#  create_role              = false
+#  lambda_role              = aws_iam_role.iam_for_lambda.arn
+#  memory_size              = 1024
+#  maximum_retry_attempts   = 5
+#}
 
-resource "aws_lambda_event_source_mapping" "lambda_invoke_ml_model_event_mapping" {
-  event_source_arn                   = var.parsed_device_kinesis_data_stream_arn
-  function_name                      = module.invoke_ml_model.lambda_function_arn
-  starting_position                  = "LATEST"
-  batch_size                         = 1000
-  maximum_batching_window_in_seconds = 60
-  parallelization_factor             = 5
-  bisect_batch_on_function_error     = true
+#resource "aws_lambda_event_source_mapping" "lambda_invoke_ml_model_event_mapping" {
+#  event_source_arn                   = var.parsed_device_kinesis_data_stream_arn
+#  function_name                      = module.invoke_ml_model.lambda_function_arn
+#  starting_position                  = "LATEST"
+#  batch_size                         = 1000
+#  maximum_batching_window_in_seconds = 60
+#  parallelization_factor             = 5
+#  bisect_batch_on_function_error     = true
 
-}
+#}
 
 
 ### Connect to Aurora ###
 # designed to stop Aurora from stopping and restoring from a snapshot, instead keeping it paused at 0 ACUs
 
-module "connect_to_aurora" {
-  source  = "terraform-aws-modules/lambda/aws"
-  version = "4.0.2"
+#module "connect_to_aurora" {
+#  source  = "terraform-aws-modules/lambda/aws"
+#  version = "4.0.2"
 
-  function_name = "connect-to-aurora"
-  handler       = "lambda_function.lambda_handler"
-  runtime       = "python3.9"
-  timeout       = "600"
-  layers        = [aws_lambda_layer_version.sqlalchemy.arn] #aws_lambda_layer_version.catboost.arn]
+#  function_name = "connect-to-aurora"
+#  handler       = "lambda_function.lambda_handler"
+#  runtime       = "python3.9"
+#  timeout       = "600"
+#  layers        = [aws_lambda_layer_version.sqlalchemy.arn] #aws_lambda_layer_version.catboost.arn]
 
-  source_path = [
-    "${path.module}/../../lambda/connect-to-aurora/lambda_function.py",
-  ]
+#  source_path = [
+#    "${path.module}/../../lambda/connect-to-aurora/lambda_function.py",
+#  ]
 
-  environment_variables    = var.connect_to_aurora_lambda_function_env_vars
-  recreate_missing_package = false
-  ignore_source_code_hash  = true
-  create_role              = false
-  lambda_role              = aws_iam_role.iam_for_lambda.arn
-  memory_size              = 128
-  maximum_retry_attempts   = 5
-}
-
-
-resource "aws_cloudwatch_event_rule" "schedule_connect_to_aurora" {
-  name                = var.schedule_connect_to_aurora_name
-  description         = "Schedule Lambda function execution for connect to aurora lambda"
-  schedule_expression = "cron(00 23 */6 * ? *)"
-  state = "ENABLED" 
-}
+#  environment_variables    = var.connect_to_aurora_lambda_function_env_vars
+#  recreate_missing_package = false
+#  ignore_source_code_hash  = true
+#  create_role              = false
+#  lambda_role              = aws_iam_role.iam_for_lambda.arn
+#  memory_size              = 128
+#  maximum_retry_attempts   = 5
+#}
 
 
-resource "aws_cloudwatch_event_target" "connect_to_aurora_lambda_execution" {
-  arn  = module.connect_to_aurora.lambda_function_arn
-  rule = aws_cloudwatch_event_rule.schedule_connect_to_aurora.name
-}
+#resource "aws_cloudwatch_event_rule" "schedule_connect_to_aurora" {
+#  name                = var.schedule_connect_to_aurora_name
+#  description         = "Schedule Lambda function execution for connect to aurora lambda"
+#  schedule_expression = "cron(00 23 */6 * ? *)"
+#  state = "ENABLED" 
+#}
+
+
+#resource "aws_cloudwatch_event_target" "connect_to_aurora_lambda_execution" {
+#  arn  = module.connect_to_aurora.lambda_function_arn
+#  rule = aws_cloudwatch_event_rule.schedule_connect_to_aurora.name
+#}
 
 ###########################################################
 # AWS Lambda Trigger
 ###########################################################
-resource "aws_lambda_permission" "connect_to_aurora_allow_cloudwatch_event_rule" {
-  statement_id  = "AllowExecutionFromCloudWatch"
-  action        = "lambda:InvokeFunction"
-  function_name = module.connect_to_aurora.lambda_function_arn
-  principal     = "events.amazonaws.com"
-  source_arn    = aws_cloudwatch_event_rule.schedule_connect_to_aurora.arn
-}
+#resource "aws_lambda_permission" "connect_to_aurora_allow_cloudwatch_event_rule" {
+#  statement_id  = "AllowExecutionFromCloudWatch"
+#  action        = "lambda:InvokeFunction"
+#  function_name = module.connect_to_aurora.lambda_function_arn
+#  principal     = "events.amazonaws.com"
+#  source_arn    = aws_cloudwatch_event_rule.schedule_connect_to_aurora.arn
+#}

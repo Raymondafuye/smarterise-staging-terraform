@@ -54,7 +54,7 @@ resource "aws_ecs_service" "api_service" {
 
   launch_type = "FARGATE"
   network_configuration {
-    subnets          = [var.private_subnets[0]]
+    subnets          = [var.public_subnets[0]]
     security_groups  = [aws_security_group.api_service_sg.id]
     assign_public_ip = true
   }

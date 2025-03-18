@@ -18,10 +18,10 @@ variable "api_image_repository_name" {
   type        = string
 }
 
-variable "private_subnets" {
-  description = "private subnets"
-  type        = list(string)
-}
+#variable "private_subnets" {
+#  description = "private subnets"
+#  type        = list(string)
+#}
 
 variable "public_subnets" {
   description = "public subnets"

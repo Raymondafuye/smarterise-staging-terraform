@@ -150,29 +150,40 @@ def write_to_s3(
 
 
 def cast_datatypes(filtered_df: pd.DataFrame, schema: dict, units: dict) -> pd.DataFrame:
-    """Do some conversions on datatypes if needed."""
+    """Convert datatypes in the dataframe based on schema and units."""
     logger.info("Casting datatypes in frame.")
 
     try:
-        for col, type in schema.items():
+        for col, dtype in schema.items():
             if col in units.keys():
                 unit = units[col]
 
-                if type == "timestamp":
-                    if unit in ["D", "s", "ms", "us", "ns"]:
-                        filtered_df[col] = pd.to_datetime(filtered_df[col], unit=unit, origin="unix")
-                    elif unit == "ISO_OFFSET_DATE_TIME":
-                        filtered_df[col] = pd.to_datetime(filtered_df[col], infer_datetime_format=True)
-                    else:
-                        raise LookupError("Unit: " + unit + " not recognised for " + str(col) + ".")
-    except Exception as e:
-        logger.error(f"\tException occurred casting datatypes: {e}")
+                # Log incoming timestamp value
+                logger.info(f"Processing column: {col}, Unit: {unit}, Current value: {filtered_df[col]}")
 
+                if dtype == "timestamp":
+                    try:
+                        # Ensure the column contains valid numeric values
+                        if pd.api.types.is_numeric_dtype(filtered_df[col]):
+                            max_value = filtered_df[col].max()
+                            if max_value > 1e12:  # If the largest value is greater than 10^12, it's in milliseconds
+                                unit = "ms"
+                            else:
+                                unit = "s"
+
+                        filtered_df[col] = pd.to_datetime(filtered_df[col], unit=unit, origin='unix', errors='coerce')
+                        logger.info(f"Converted timestamp ({unit}): {filtered_df[col]}")
+                    
+                    except Exception as e:
+                        logger.error(f"Error occurred while converting {col}: {e}")
+                        filtered_df[col] = pd.NaT  # Handle the error by setting it to NaT
+                    
+    except Exception as e:
+        logger.error(f"Exception occurred casting datatypes: {e}")
         return e
 
+    logger.info(f"After casting, final timestamp values: {filtered_df['timestamp']}")
     return filtered_df
-
-
 
 def find_format_and_table(record: pd.DataFrame, _config=config.config) -> tuple[str, str]:
     """
@@ -214,7 +225,6 @@ def find_format_and_table(record: pd.DataFrame, _config=config.config) -> tuple[
 
     raise AttributeError(f"This record doesn't match any formats in the config: {record}")
 
-
 def deserialize_record(record) -> dict:
     """Payload of the stream to returned flat json"""
     logger.info("Deserializing payload.")
@@ -234,7 +244,15 @@ def deserialize_record(record) -> dict:
     payload = json.loads(payload)
     flat_json = flatten(payload)
 
-    return flat_json
+    # Remove '_0' from the keys
+    cleaned_flat_json = {key.replace('_0', ''): value for key, value in flat_json.items()}
+
+    # Add these debug lines
+    logger.info(f"Number of columns: {len(cleaned_flat_json.keys())}")
+    logger.info(f"Device model: {cleaned_flat_json.get('device_model')}")
+
+    return cleaned_flat_json
+
 
 
 def map_to_schema(record: dict, table: str, _format: str, _config: dict = config.config) -> dict:
@@ -244,10 +262,12 @@ def map_to_schema(record: dict, table: str, _format: str, _config: dict = config
     final_record = {}
     map = _config[table]["format_types"][_format]["map"]
     schema = _config[table]["table_schema"]
+    logger.info(f"Using map: {map}")
+    logger.info(f"Using schema: {schema}")
 
     for key, value in record.items():
         if key in map.keys():
-            target_column = map[key]["target_column"]
+            target_column = map[key]["target_column"] # Debug log
             if target_column in schema.keys():
                 final_record[target_column] = value
             else:
@@ -283,24 +303,53 @@ def reorder_columns(df: pd.DataFrame, first_columns: list[str]) -> pd.DataFrame:
 
     return df
 
+import boto3
+import os
+import logging
+
+# Assuming logging has been configured
+logger = logging.getLogger(__name__)
+
 
 def put_record_in_parsed_kinesis_stream(record_df, stream_name=None) -> dict:
     """
     Puts record in kinesis stream for parsed records
     """
     client = boto3.client("kinesis", region_name="eu-west-2")
+    
     if not stream_name:
         stream_name = os.environ.get("PARSED_DEVICE_KINESIS_DATA_STREAM_NAME")
+    
+    # Log the data before sending
+    logger.info(f"Attempting to send data to Kinesis: {record_df}")
+    
+    # Ensure the DataFrame has the necessary values and isn't empty
+    if record_df.empty:
+        logger.error(f"The DataFrame is empty, no data to send. DataFrame details: {record_df}")
+        return {"error": "Empty DataFrame"}
+
     try:
+        # Convert DataFrame to JSON
+        data_to_send = record_df.to_json()
+
+        # Log the final data that will go to Kinesis
+        logger.info(f"Sending the following data to Kinesis: {data_to_send}")
+
+        # Put the record in Kinesis
         res = client.put_record(
             StreamName=stream_name,
-            Data=record_df.to_json(),
+            Data=data_to_send,
             PartitionKey=record_df["gateway_serial"].values[0],
         )
-        logger.info(res)
-    except Exception as e:
-        logger.error(e)
 
+        # Log the response from Kinesis
+        logger.info(f"Kinesis response: {res}")
+
+    except Exception as e:
+        logger.error(f"Exception occurred while sending data to Kinesis: {e}")
+        return {"error": str(e)}
+
+    return res
 
 def lambda_handler(event, context, _config: dict = config.config) -> None:
     """

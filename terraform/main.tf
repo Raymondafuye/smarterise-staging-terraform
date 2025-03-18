@@ -90,7 +90,6 @@ module "aws-ecs" {
   aws_account_id                   = module.meta.account_id
   region                           = module.meta.aws_active_region_name
   api_image_repository_name        = module.aws-ecr.smarterise_api_ecr_repository_name
-  private_subnets                  = module.aws-vpc.private_subnets
   public_subnets                   = module.aws-vpc.public_subnets
   vpc_id                           = module.aws-vpc.vpc_id
   smarterise_domain_root           = var.smarterise_domain_root
@@ -98,8 +97,8 @@ module "aws-ecs" {
   rds_instance_arn                 = module.rds.rds_instance_arn
   rds_credentials_secret_arn       = module.rds.rds_credentials_secret_arn
   rds_connection_string_secret_arn = module.rds.rds_connection_string_secret_arn
-
 }
+
 
 module "aws-vpc" {
   source = "./aws-vpc"

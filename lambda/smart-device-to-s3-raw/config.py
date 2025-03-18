@@ -12,7 +12,7 @@ config = {
             "gateway_model": {"comment": "_", "type": "string"},
             "gateway_serial": {"comment": "_", "type": "string"},
             # Device Data
-            "device_name": {"comment": "_", "type": "string"},
+            "company_id": {"comment": "_", "type": "string"},
             "device_model": {"comment": "_", "type": "string"},
             "device_serial": {"comment": "_", "type": "string"},
             "device_online": {"comment": "_", "type": "boolean"},
@@ -445,12 +445,12 @@ config = {
                     "gateway_model": {"comment": "_", "target_column": "gateway_model"},
                     "gateway_serial": {"comment": "_", "target_column": "gateway_serial"},
                     # Device Data
-                    "device_name": {"comment": "_", "target_column": "device_name"},
+                    "device_name": {"comment": "_", "target_column": "company_id"},
                     "device_model": {"comment": "_", "target_column": "device_model"},
                     "device_serial": {"comment": "_", "target_column": "device_serial"},
                     "device_online": {"comment": "_", "target_column": "device_online"},
                     # Record Data
-                    "device_readings_0_value": {
+                    "device_readings_value": {
                         "comment": "Units: V",
                         "target_column": "line_to_neutral_voltage_phase_a",
                     },
@@ -1025,7 +1025,7 @@ config = {
                 },
             },
             "Acuvim-II": {
-                "unique_features": {"num_columns": 887, "has_columns": ["timestamp", "gateway_name", "device_name"]},
+                "unique_features": {"num_columns": 887, "has_columns": ["timestamp", "gateway_name", "company_id"]},
                 "map": {
                     # Meta Data
                     "timestamp": {"comment": "From the record. Units: ms", "unit": "s", "target_column": "timestamp"},
@@ -1034,7 +1034,7 @@ config = {
                     "gateway_model": {"comment": "_", "target_column": "gateway_model"},
                     "gateway_serial": {"comment": "_", "target_column": "gateway_serial"},
                     # Device Data
-                    "device_name": {"comment": "_", "target_column": "device_name"},
+                    "company_id": {"comment": "_", "target_column": "company_id"},
                     "device_model": {"comment": "_", "target_column": "device_model"},
                     "device_serial": {"comment": "_", "target_column": "device_serial"},
                     "device_online": {"comment": "_", "target_column": "device_online"},
