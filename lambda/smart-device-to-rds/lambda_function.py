@@ -205,9 +205,11 @@ def insert_into_rds(df: pd.DataFrame) -> None:
             values_placeholder = ', '.join(['%s'] * len(df.columns))
 
             sql = f"""
-                INSERT INTO {rds_table} ({columns})
-                VALUES ({values_placeholder})
-            """
+                    INSERT INTO {rds_table} ({columns})
+                    VALUES ({values_placeholder})
+                    ON CONFLICT ("timestamp", "gateway_serial") 
+                    DO UPDATE SET column_name = EXCLUDED.column_name
+                    """
             for _, row in df.iterrows():
                 cursor.execute(sql, tuple(row))
 
@@ -228,6 +230,8 @@ def lambda_handler(event, context) -> None:
     failed_records = []
 
     for record in event["Records"]:
+        event_id = record["eventID"]
+        logger.info(f"Processing event ID: {event_id}")
         try:
             payload = deserialize_record(record)
             record_df = pd.DataFrame.from_dict(payload)

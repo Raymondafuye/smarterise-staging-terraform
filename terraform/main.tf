@@ -48,6 +48,13 @@ module "aws-lambda" {
   datalake_raw_athena_results_bucket_arn          = module.s3.datalake_raw_athena_results_bucket_arn
   parsed_device_kinesis_data_stream_arn           = module.aws_kinesis_data_stream.parsed_device_data_stream_arn
   smart_deivce_to_rds_env_vars                    = { "DB_INSTANCE_ARN" : module.rds.rds_instance_arn, "SECRET_ARN" : module.rds.rds_credentials_secret_arn}
+  ftp_host                                        = "ftp.smarterise.com"
+  ftp_user                                        = "r.afuye@smarterise.com"
+  ftp_pass                                        = "Sm@rterise"
+  ftp_folder                                      = "/307a57025366"
+  s3_bucket                                       = "ftpfiletest"
+  s3_folder                                       = "ftp-backups/"
+  database_url                                    = "postgresql://dbadmin:r!l%S4MGEBA$Ud7L@postgresql-instance.cj4m4g2kmc36.eu-west-2.rds.amazonaws.com:5432/mydb"
   rds_endpoint                                    = module.rds.rds_instance_endpoint
   rds_db_name                                     = module.rds.rds_instance_name
   rds_username                                    = module.rds.rds_instance_username
@@ -66,6 +73,12 @@ module "rds" {
   vpc_ipv6_cidr_block = module.aws-vpc.vpc_ipv6_cidr_block
   vpc_id              = module.aws-vpc.vpc_id
 }
+
+module "aws-eventbridge" {
+  source     = "./aws-eventbridge"
+  lambda_arn = module.aws-lambda.lambda_arn
+}
+
 
 
 

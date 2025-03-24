@@ -62,9 +62,9 @@ resource "aws_lambda_event_source_mapping" "lambda_smart_device_to_s3_event_mapp
   event_source_arn                   = var.device_kinesis_data_stream_arn
   function_name                      = module.smart_device_to_s3_raw_lambda_function.lambda_function_arn
   starting_position                  = "LATEST"
-  batch_size                         = 1000
+  batch_size                         = 500 #different from prod
   maximum_batching_window_in_seconds = 60
-  parallelization_factor             = 5
+  parallelization_factor             = 2
   maximum_retry_attempts             = 5
   bisect_batch_on_function_error     = true
  
@@ -113,12 +113,213 @@ resource "aws_lambda_event_source_mapping" "lambda_smart_device_to_rds_event_map
   event_source_arn                   = var.parsed_device_kinesis_data_stream_arn
   function_name                      = module.smart_device_to_rds_lambda_function.lambda_function_arn
   starting_position                  = "LATEST"
-  batch_size                         = 1000
+  batch_size                         = 500
   maximum_batching_window_in_seconds = 60
-  parallelization_factor             = 5
+  parallelization_factor             = 2
   bisect_batch_on_function_error     = true
 
 }
+
+#Lambda for ftp_invocation
+
+
+
+resource "aws_iam_role" "lambda_role" {
+  name = "ftp_to_s3_lambda_role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = {
+        Service = "lambda.amazonaws.com"
+      }
+    }]
+  })
+}
+
+resource "aws_iam_policy" "lambda_policy" {
+  name        = "ftp_to_s3_lambda_policy"
+  description = "Policy to allow Lambda to access S3"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = ["s3:*"]
+        Effect   = "Allow"
+        Resource = [
+          "arn:aws:s3:::${var.s3_bucket}",
+          "arn:aws:s3:::${var.s3_bucket}/*"
+        ]
+      },
+      {
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Effect   = "Allow"
+        Resource = "arn:aws:logs:*:*:*"
+      }
+    ]
+  })
+}
+
+resource "aws_cloudwatch_log_group" "lambda_log_group" {
+  name              = "/aws/lambda/ftp_to_s3"
+  retention_in_days = 7 # Change retention as needed
+}
+
+
+resource "aws_iam_role_policy_attachment" "lambda_attach" {
+  role       = aws_iam_role.lambda_role.name
+  policy_arn = aws_iam_policy.lambda_policy.arn
+}
+
+resource "aws_lambda_function" "ftp_to_s3" {
+  function_name    = "ftp_to_s3"
+  runtime          = "python3.12"
+  handler         = "lambda_function.lambda_handler"
+  role            = aws_iam_role.lambda_role.arn
+  filename        = "${path.module}/../../lambda/connect-to-ftp/lambda_function.zip"
+  timeout         = 120
+
+  environment {
+    variables = {
+      FTP_HOST   = var.ftp_host
+      FTP_USER   = var.ftp_user
+      FTP_PASS   = var.ftp_pass
+      FTP_FOLDER = var.ftp_folder
+      S3_BUCKET  = var.s3_bucket
+      S3_FOLDER  = var.s3_folder
+    }
+  }
+  
+}
+
+resource "aws_lambda_permission" "allow_eventbridge" {
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.ftp_to_s3.function_name
+  principal     = "events.amazonaws.com"
+}
+
+#Lambda for ftp_invocation on into rds
+
+resource "aws_iam_role" "lambda_s3_to_rds_role" {
+  name = "lambda_s3_to_rds_role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_policy" "lambda_s3_to_rds_policy" {
+  name        = "lambda_s3_to_rds_policy"
+  description = "Allows Lambda to read from S3 and write to RDS"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:ListBucket"
+        ]
+        Resource = [
+          "arn:aws:s3:::${var.s3_bucket}",
+          "arn:aws:s3:::${var.s3_bucket}/*"
+        ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "rds:DescribeDBInstances",
+          "rds-db:connect"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Resource = "arn:aws:logs:*:*:*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_policy_attach" {
+  role       = aws_iam_role.lambda_s3_to_rds_role.name
+  policy_arn = aws_iam_policy.lambda_policy.arn
+}
+
+resource "aws_lambda_function" "s3_to_rds_lambda" {
+  function_name = "s3_to_rds_lambda"
+  role         = aws_iam_role.lambda_s3_to_rds_role.arn
+  runtime      = "python3.12"
+  handler      = "lambda_function.lambda_handler"
+  filename     = "${path.module}/../../lambda/connect-ftp-to-rds/lambda_function.zip"
+
+  environment {
+    variables = merge(
+      {
+        DB_HOST     = split(":", var.rds_endpoint)[0]
+        DB_NAME     = var.rds_db_name
+        DB_USER     = var.rds_username
+        DB_PASSWORD = var.rds_password
+        DB_PORT     = "5432"
+      },
+      var.smart_deivce_to_rds_env_vars
+    )
+  }
+  
+  layers = [
+    "arn:aws:lambda:eu-west-2:794038252750:layer:python-pandas:4",
+    "arn:aws:lambda:eu-west-2:794038252750:layer:sqlchemy:1"
+  ]
+
+  memory_size = 256
+  timeout     = 300  # 5 minutes
+}
+
+# This should be a separate resource outside the lambda function
+resource "aws_s3_bucket_notification" "s3_trigger" {
+  bucket = var.s3_bucket
+
+  lambda_function {
+    lambda_function_arn = aws_lambda_function.s3_to_rds_lambda.arn
+    events              = ["s3:ObjectCreated:*"]
+    filter_suffix       = ".csv"
+  }
+
+  depends_on = [aws_lambda_function.s3_to_rds_lambda]
+}
+
+# This should also be a separate resource
+resource "aws_lambda_permission" "allow_s3_trigger" {
+  statement_id  = "AllowS3Invoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.s3_to_rds_lambda.function_name
+  principal     = "s3.amazonaws.com"
+  source_arn    = "arn:aws:s3:::${var.s3_bucket}"
+}
+
+
 
 #module "invoke_ml_model" {
 #  source  = "terraform-aws-modules/lambda/aws"

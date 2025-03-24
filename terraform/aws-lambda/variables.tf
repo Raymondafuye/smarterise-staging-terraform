@@ -128,3 +128,21 @@ variable "rds_password" {
   sensitive   = true
 }
 
+#lambda to ftp_folder
+
+variable "ftp_host" {}
+variable "ftp_user" {}
+variable "ftp_pass" {}
+variable "ftp_folder" {}
+
+variable "s3_folder" {}
+variable "s3_bucket" {
+  description = "The name of the S3 bucket"
+  type        = string
+  default     = "ftpfiletest"
+}
+
+variable "database_url" {
+  description = "The connection string for the RDS database"
+  type        = string
+}
