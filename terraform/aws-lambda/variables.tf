@@ -107,6 +107,7 @@ variable "connect_to_aurora_lambda_function_env_vars" {
   description = "env vars for the connect to aurora lambda function"
 }
 
+#ftp_client connection
 variable "rds_endpoint" {
   description = "RDS endpoint"
   type        = string
