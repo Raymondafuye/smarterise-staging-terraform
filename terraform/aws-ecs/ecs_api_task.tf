@@ -1,7 +1,7 @@
 # Prepare a CloudWatch log group for this service
 resource "aws_cloudwatch_log_group" "api_service_log_group" {
   name              = "/${var.environment}/ecs/api_service"
-  retention_in_days = var.log_retention_in_days
+  retention_in_days = 1
 }
 
 resource "aws_security_group" "api_service_sg" {

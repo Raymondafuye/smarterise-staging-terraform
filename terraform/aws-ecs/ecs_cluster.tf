@@ -3,7 +3,7 @@
 # Prepare logs
 resource "aws_cloudwatch_log_group" "platform_logs" {
   name              = "platform_logs_${lower(var.environment)}"
-  retention_in_days = var.log_retention_in_days
+  retention_in_days = 1
 }
 
 # Prepare ECS Cluster

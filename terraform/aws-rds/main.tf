@@ -7,9 +7,9 @@ resource "aws_db_instance" "rds_postgresql" {
   identifier           = "postgresql-instance"
   engine              = "postgres"
   engine_version      = "14"
-  instance_class      = "db.t3.micro"
-  allocated_storage   = 20
-  storage_type        = "gp2"
+  instance_class      = "db.t3.small"
+  allocated_storage   = 100
+  storage_type        = "gp3"
   
   db_name             = "mydb"
   username            = var.rds_postgresql_username

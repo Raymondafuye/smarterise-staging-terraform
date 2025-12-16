@@ -36,7 +36,7 @@ variable "vpc_id" {
 variable "log_retention_in_days" {
   description = "Log retention in days for this service"
   type        = number
-  default     = 30
+  default     = 3
 }
 
 variable "api_service_image_tag" {

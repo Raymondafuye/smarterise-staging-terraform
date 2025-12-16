@@ -36,7 +36,7 @@ resource "aws_lambda_layer_version" "sqlalchemy" {
 module "smart_device_to_s3_raw_lambda_function" {
   source  = "terraform-aws-modules/lambda/aws"
   version = "4.0.2"
-  cloudwatch_logs_retention_in_days = 1
+  cloudwatch_logs_retention_in_days = 3
   function_name = var.smart_device_to_s3_raw_lambda_name
   handler       = "lambda_function.lambda_handler"
   runtime       = "python3.9"
@@ -73,7 +73,7 @@ resource "aws_lambda_event_source_mapping" "lambda_smart_device_to_s3_event_mapp
 module "smart_device_to_rds_lambda_function" {
   source  = "terraform-aws-modules/lambda/aws"
   version = "4.0.2"
-  cloudwatch_logs_retention_in_days = 1
+  cloudwatch_logs_retention_in_days = 3
 
   function_name = var.smart_device_to_rds_lambda_name
   handler       = "lambda_function.lambda_handler"
@@ -169,7 +169,12 @@ resource "aws_iam_policy" "lambda_policy" {
 
 resource "aws_cloudwatch_log_group" "lambda_log_group" {
   name              = "/aws/lambda/ftp_to_s3"
-  retention_in_days = 7 # Change retention as needed
+  retention_in_days = 3 # Change retention as needed
+}
+
+resource "aws_cloudwatch_log_group" "s3_to_rds_lambda_log_group" {
+  name              = "/aws/lambda/s3_to_rds_lambda"
+  retention_in_days = 3
 }
 
 

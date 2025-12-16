@@ -5,6 +5,7 @@ import sqlalchemy
 import pytz
 import logging
 import re
+import json
 from io import StringIO
 from config import cols_for_rds
 
@@ -12,6 +13,10 @@ logging.basicConfig(level=logging.INFO)
 
 # S3 Client
 s3_client = boto3.client("s3")
+
+# Bedrock Client (using free tier model)
+bedrock_client = boto3.client('bedrock-runtime', region_name='eu-west-2')
+FREE_MODEL_ID = 'anthropic.claude-3-haiku-20240307-v1:0'  # Free tier model
 
 # RDS Connection
 # RDS connection details from environment variables
@@ -79,6 +84,24 @@ def extract_gateway_serial(filename):
     if match:
         return match.group(1)
     return None
+
+def call_bedrock_ai(prompt):
+    """Call Bedrock AI using free tier model."""
+    try:
+        response = bedrock_client.invoke_model(
+            modelId=FREE_MODEL_ID,
+            body=json.dumps({
+                "anthropic_version": "bedrock-2023-05-31",
+                "max_tokens": 1000,
+                "messages": [{"role": "user", "content": prompt}]
+            })
+        )
+        
+        result = json.loads(response['body'].read())
+        return result['content'][0]['text']
+    except Exception as e:
+        logging.error(f"Bedrock AI call failed: {e}")
+        return None
 
 def lambda_handler(event, context):
     """AWS Lambda function triggered by S3 when a CSV file is uploaded."""
