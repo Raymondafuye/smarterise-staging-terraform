@@ -2,7 +2,12 @@ resource "aws_kinesis_stream" "device_data_stream" {
   name                      = var.kinesis_device_data_stream_name
   retention_period          = 24
   enforce_consumer_deletion = var.enforce_consumer_deletion
+  
+  stream_mode_details {
+    stream_mode = "PROVISIONED"
+  }
   shard_count               = 1
+  
   #reference for recommended cloudwatch metrics: https://docs.aws.amazon.com/streams/latest/dev/monitoring-with-cloudwatch.html#kinesis-metric-use
   shard_level_metrics = [
     "IncomingBytes",
@@ -21,7 +26,12 @@ resource "aws_kinesis_stream" "parsed_device_data_stream" {
   name                      = var.parsed_device_data_stream
   retention_period          = 24
   enforce_consumer_deletion = var.enforce_consumer_deletion
+  
+  stream_mode_details {
+    stream_mode = "PROVISIONED"
+  }
   shard_count               = 1
+  
   #reference for recommended cloudwatch metrics: https://docs.aws.amazon.com/streams/latest/dev/monitoring-with-cloudwatch.html#kinesis-metric-use
   shard_level_metrics = [
     "IncomingBytes",

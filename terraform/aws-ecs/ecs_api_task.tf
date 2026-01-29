@@ -101,10 +101,6 @@ resource "aws_ecs_task_definition" "api_service_task_definition" {
                     "value": "arn:aws:rds:eu-west-2:794038252750:db:postgresql-instance"
                 },
                 {
-                    "name": "AWS_SECRET_ACCESS_KEY",
-                    "value": "4l5+xPX8eOd/2y2zc/xQHxBx6sqv8w53ZUo+BjFT"
-                },
-                {
                     "name": "AWS_DEFAULT_REGION",
                     "value": "eu-west-2"
                 },
@@ -139,10 +135,6 @@ resource "aws_ecs_task_definition" "api_service_task_definition" {
                 {
                     "name": "API_IDENTIFIER",
                     "value": "https://api.dev.demo.powersmarter.net/"
-                },
-                {
-                    "name": "AWS_ACCESS_KEY_ID",
-                    "value": "AKIA3RYC6GTHC5CLYKVT"
                 },
                 {
                     "name": "AWS_SECRET_ARN",

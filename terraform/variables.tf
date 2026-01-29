@@ -18,7 +18,7 @@ variable "smarterise_domain_root" {
 variable "rds_postgresql_username" {
   description = "Master username for the RDS PostgreSQL instance"
   type        = string
-  default     = "mydb"
+  default     = "dbadmin"
 }
 
 
