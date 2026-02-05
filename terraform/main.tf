@@ -84,6 +84,8 @@ module "aws-lambda" {
   smart_device_to_s3_raw_lambda_function_env_vars = {}
   connect_to_aurora_lambda_function_env_vars      = var.enable_expensive_resources ? { "DB_INSTANCE_ARN" : module.rds[0].rds_instance_arn,"SECRET_ARN" : module.rds[0].rds_credentials_secret_arn} : {}
   site_config_bucket_name                         = var.site_config_bucket_name
+  
+  depends_on = [module.aws_kinesis_data_stream, module.rds]
 }
 
 module "rds" {

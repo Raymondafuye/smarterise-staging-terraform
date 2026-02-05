@@ -67,6 +67,8 @@ resource "aws_lambda_event_source_mapping" "lambda_smart_device_to_s3_event_mapp
   parallelization_factor             = 2
   maximum_retry_attempts             = 5
   bisect_batch_on_function_error     = true
+  
+  depends_on = [aws_iam_role_policy_attachment.iam_role_policy_attachment]
 }
 
 module "smart_device_to_rds_lambda_function" {
@@ -116,7 +118,8 @@ resource "aws_lambda_event_source_mapping" "lambda_smart_device_to_rds_event_map
   maximum_batching_window_in_seconds = 60
   parallelization_factor             = 2
   bisect_batch_on_function_error     = true
-
+  
+  depends_on = [aws_iam_role_policy_attachment.iam_role_policy_attachment]
 }
 
 #Lambda for ftp_invocation
