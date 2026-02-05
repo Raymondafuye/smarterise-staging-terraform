@@ -14,12 +14,12 @@ output "site_config_manager_function_name" {
 # Lambda Function Outputs
 output "ftp_lambda_arn" {
   description = "ARN of the FTP Lambda function"
-  value       = module.aws-lambda.ftp_lambda_arn
+  value       = var.enable_expensive_resources ? module.aws-lambda[0].ftp_lambda_arn : null
 }
 
 output "s3_to_rds_lambda_arn" {
   description = "ARN of the S3 to RDS Lambda function"
-  value       = module.aws-lambda.s3_to_rds_lambda_arn
+  value       = var.enable_expensive_resources ? module.aws-lambda[0].s3_to_rds_lambda_arn : null
 }
 
 # Infrastructure Outputs
@@ -30,13 +30,13 @@ output "vpc_id" {
 
 output "rds_endpoint" {
   description = "RDS instance endpoint"
-  value       = module.rds.rds_instance_endpoint
+  value       = var.enable_expensive_resources ? module.rds[0].rds_instance_endpoint : null
   sensitive   = true
 }
 
 output "kinesis_stream_name" {
   description = "Name of the Kinesis data stream"
-  value       = module.aws_kinesis_data_stream.device_data_stream_name
+  value       = var.enable_expensive_resources ? module.aws_kinesis_data_stream[0].device_data_stream_name : null
 }
 
 # S3 Bucket Outputs
