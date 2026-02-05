@@ -13,6 +13,22 @@ module "aws_iot" {
   smart_device_names                 = var.smart_device_names
 }
 
+# Site Configuration Management Module
+module "aws-site-config" {
+  source                 = "./aws-site-config"
+  site_config_bucket_name = var.site_config_bucket_name
+  smart_device_names     = var.smart_device_names
+}
+
+# Enhanced EventBridge for Site-Aware Scheduling
+module "aws-enhanced-eventbridge" {
+  source                   = "./aws-enhanced-eventbridge"
+  ftp_lambda_arn          = module.aws-lambda.ftp_lambda_arn
+  ftp_lambda_function_name = module.aws-lambda.ftp_lambda_function_name
+  
+  depends_on = [module.aws-lambda]
+}
+
 module "aws_kinesis_data_stream" {
   source      = "./aws-kinesis-data-stream"
   account_id  = module.meta.account_id
@@ -48,13 +64,13 @@ module "aws-lambda" {
   datalake_raw_athena_results_bucket_arn          = module.s3.datalake_raw_athena_results_bucket_arn
   parsed_device_kinesis_data_stream_arn           = module.aws_kinesis_data_stream.parsed_device_data_stream_arn
   smart_deivce_to_rds_env_vars                    = { "DB_INSTANCE_ARN" : module.rds.rds_instance_arn, "SECRET_ARN" : module.rds.rds_credentials_secret_arn}
-  ftp_host                                        = "ftp.smarterise.com"
-  ftp_user                                        = "r.afuye@smarterise.com"
-  ftp_pass                                        = "Sm@rterise"
-  ftp_folder                                      = "/307a57025366"
-  s3_bucket                                       = "ftpfiletest"
-  s3_folder                                       = "ftp-backups/"
-  database_url                                    = "postgresql://dbadmin:r!l%S4MGEBA$Ud7L@postgresql-instance.cj4m4g2kmc36.eu-west-2.rds.amazonaws.com:5432/mydb"
+  ftp_host                                        = var.ftp_host
+  ftp_user                                        = var.ftp_user
+  ftp_pass                                        = var.ftp_pass
+  ftp_folder                                      = var.ftp_folder
+  s3_bucket                                       = var.s3_bucket
+  s3_folder                                       = var.s3_folder
+  database_url                                    = var.database_url
   rds_endpoint                                    = module.rds.rds_instance_endpoint
   rds_db_name                                     = module.rds.rds_instance_name
   rds_username                                    = module.rds.rds_instance_username
@@ -63,6 +79,7 @@ module "aws-lambda" {
   rds_credentials_secret_arn                      = module.rds.rds_credentials_secret_arn
   smart_device_to_s3_raw_lambda_function_env_vars = {}
   connect_to_aurora_lambda_function_env_vars      = { "DB_INSTANCE_ARN" : module.rds.rds_instance_arn,"SECRET_ARN" : module.rds.rds_credentials_secret_arn}
+  site_config_bucket_name                         = var.site_config_bucket_name
   }
 
 module "rds" {
@@ -86,6 +103,7 @@ module "web-app" {
   source                 = "./web-app"
   smarterise_domain_root = var.smarterise_domain_root
   smarterise_dns_zone_id = module.aws-route53.smarterise_demo_dns_zone_id
+  existing_certificate_arn_us_east_1 = var.existing_certificate_arn_us_east_1
 }
 
 module "aws-route53" {
@@ -110,6 +128,7 @@ module "aws-ecs" {
   rds_instance_arn                 = module.rds.rds_instance_arn
   rds_credentials_secret_arn       = module.rds.rds_credentials_secret_arn
   rds_connection_string_secret_arn = module.rds.rds_connection_string_secret_arn
+  existing_certificate_arn         = var.existing_certificate_arn
 }
 
 
@@ -315,7 +334,7 @@ resource "aws_cloudwatch_metric_alarm" "alarms" {
   statistic           = "Average"
   threshold           = 3.0
   actions_enabled     = true
-  alarm_actions       = ["arn:aws:sns:eu-west-2:368563411071:CloudWatchAlarmTopic"]
+  alarm_actions       = [aws_sns_topic.alarm_topic.arn]
 }
 
 
@@ -327,7 +346,7 @@ resource "aws_sns_topic" "alarm_topic" {
 resource "aws_sns_topic_subscription" "lambda_subscription" {
   topic_arn = aws_sns_topic.alarm_topic.arn
   protocol  = "lambda"
-  endpoint  = "arn:aws:lambda:eu-west-2:794038252750:function:SNS_Alarm_Message_Trigger"
+  endpoint  = module.aws-lambda.sns_alarm_trigger_arn
 }
 
 ###ses configuration

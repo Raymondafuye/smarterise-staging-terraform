@@ -23,14 +23,14 @@ resource "aws_route53_record" "www-a" {
 }
 
 resource "aws_route53_record" "cert_validation" {
-  for_each = {
-    for dvo in aws_acm_certificate.ssl_certificate.domain_validation_options : dvo.domain_name => {
+  for_each = var.existing_certificate_arn_us_east_1 == null && length(aws_acm_certificate.ssl_certificate) > 0 ? {
+    for dvo in aws_acm_certificate.ssl_certificate[0].domain_validation_options : dvo.domain_name => {
       name    = dvo.resource_record_name
       record  = dvo.resource_record_value
       type    = dvo.resource_record_type
       zone_id = var.smarterise_dns_zone_id
     }
-  }
+  } : {}
 
   allow_overwrite = true
   name            = each.value.name

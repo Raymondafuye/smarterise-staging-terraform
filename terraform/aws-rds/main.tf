@@ -1,6 +1,8 @@
 resource "random_password" "master" {
   length  = 16
   special = true
+  # Exclude invalid characters for RDS passwords
+  override_special = "!#$%&*()-_=+[]{}<>:?"
 }
 
 resource "aws_db_instance" "rds_postgresql" {

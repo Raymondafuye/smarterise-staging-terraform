@@ -13,3 +13,9 @@ variable "smarterise_dns_zone_id" {
   type        = string
   description = "The zone ID of the demo dns zone"
 }
+
+variable "existing_certificate_arn_us_east_1" {
+  description = "Existing ACM certificate ARN in us-east-1 for CloudFront"
+  type        = string
+  default     = null
+}

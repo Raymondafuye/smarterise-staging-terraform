@@ -44,13 +44,13 @@ resource "aws_cloudfront_distribution" "root_s3_distribution" {
       restriction_type = "none"
     }
   }
-  viewer_certificate {
-    acm_certificate_arn      = aws_acm_certificate_validation.cert_validation.certificate_arn
-    ssl_support_method       = "sni-only"
-    minimum_protocol_version = "TLSv1.1_2016"
-  }
+viewer_certificate {
+  acm_certificate_arn      = var.existing_certificate_arn_us_east_1
+  ssl_support_method       = "sni-only"
+  minimum_protocol_version = "TLSv1.2_2021"
+}
 
-  custom_error_response {
+custom_error_response {
     error_caching_min_ttl = 10
     error_code            = 404
     response_code         = 200

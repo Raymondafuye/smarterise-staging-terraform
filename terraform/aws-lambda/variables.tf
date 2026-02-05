@@ -147,3 +147,10 @@ variable "database_url" {
   description = "The connection string for the RDS database"
   type        = string
 }
+
+# Site configuration bucket for enhanced Lambda
+variable "site_config_bucket_name" {
+  description = "Name of the S3 bucket for site configuration"
+  type        = string
+  default     = "smarterise-site-config"
+}

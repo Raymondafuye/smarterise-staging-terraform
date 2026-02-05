@@ -1,5 +1,10 @@
 resource "aws_secretsmanager_secret" "rds_credentials" {
-  name = "rds-credentials-${aws_db_instance.rds_postgresql.identifier}"
+  name                    = "rds-credentials-${aws_db_instance.rds_postgresql.identifier}"
+  recovery_window_in_days = 0  # Force delete immediately
+  
+  lifecycle {
+    ignore_changes = [name]
+  }
 }
 
 resource "aws_secretsmanager_secret_version" "rds_instance_master_password" {
@@ -13,7 +18,12 @@ resource "aws_secretsmanager_secret_version" "rds_instance_master_password" {
 }
 
 resource "aws_secretsmanager_secret" "rds_connection_string" {
-  name = "rds-connection-string-${aws_db_instance.rds_postgresql.identifier}"
+  name                    = "rds-connection-string-${aws_db_instance.rds_postgresql.identifier}"
+  recovery_window_in_days = 0  # Force delete immediately
+  
+  lifecycle {
+    ignore_changes = [name]
+  }
 }
 
 resource "aws_secretsmanager_secret_version" "rds_connection_string_secret_version" {

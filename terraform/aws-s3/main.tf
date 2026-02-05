@@ -1,9 +1,15 @@
 #############################
 ####### datalake raw ########
 #############################
+# Import existing S3 buckets instead of creating new ones
 resource "aws_s3_bucket" "datalake_raw" {
   bucket        = var.datalake_raw_storage_bucket_name
   force_destroy = true
+  
+  lifecycle {
+    prevent_destroy = false
+    ignore_changes = [bucket]
+  }
 }
 
 # Add ownership controls to enable ACLs

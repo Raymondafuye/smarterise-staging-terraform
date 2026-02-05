@@ -39,7 +39,8 @@ variable "smart_device_names" {
   type        = list(string)
   default = [
     "ehm21120333",
-    "AN54101471"
+    "AN54101471",
+    "AN55103124"
   ]
 }
 
@@ -47,4 +48,75 @@ variable "rds_state_bucket_name" {
   description = "Bucket name to hold RDS State"
   type        = string
   default     = "smarterise-rds-state1"
+}
+
+variable "site_config_bucket_name" {
+  description = "Bucket name for site configuration management"
+  type        = string
+  default     = "smarterise-site-config"
+}
+
+# FTP Configuration Variables
+variable "ftp_host" {
+  description = "FTP server hostname"
+  type        = string
+  default     = "ftp.smarterise.com"
+}
+
+variable "ftp_user" {
+  description = "FTP username"
+  type        = string
+  default     = "r.afuye@smarterise.com"
+}
+
+variable "ftp_pass" {
+  description = "FTP password"
+  type        = string
+  sensitive   = true
+  default     = "Sm@rterise"
+}
+
+variable "ftp_folder" {
+  description = "FTP folder path"
+  type        = string
+  default     = "/307a57025366"
+}
+
+variable "s3_bucket" {
+  description = "S3 bucket for FTP files"
+  type        = string
+  default     = "ftpfiletest"
+}
+
+variable "s3_folder" {
+  description = "S3 folder prefix"
+  type        = string
+  default     = "ftp-backups/"
+}
+
+variable "database_url" {
+  description = "Database connection URL"
+  type        = string
+  sensitive   = true
+  default     = "postgresql://dbadmin:PLACEHOLDER@postgresql-instance.cj4m4g2kmc36.eu-west-2.rds.amazonaws.com:5432/mydb"
+}
+
+
+# Certificate management options
+variable "existing_certificate_arn" {
+  description = "Existing ACM certificate ARN (if available)"
+  type        = string
+  default     = null
+}
+
+variable "existing_certificate_arn_us_east_1" {
+  description = "Existing ACM certificate ARN in us-east-1 for CloudFront"
+  type        = string
+  default     = null
+}
+
+variable "skip_ssl_certificate" {
+  description = "Skip SSL certificate creation (use HTTP only)"
+  type        = bool
+  default     = false
 }

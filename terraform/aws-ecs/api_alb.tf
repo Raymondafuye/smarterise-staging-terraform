@@ -59,7 +59,7 @@ resource "aws_lb_listener" "api_service_lb_listener" {
   load_balancer_arn = aws_lb.api_load_balancer.arn
   port              = "443"
   protocol          = "HTTPS"
-  certificate_arn   = aws_acm_certificate.ssl_certificate.arn
+  certificate_arn   = var.existing_certificate_arn != null ? var.existing_certificate_arn : (length(aws_acm_certificate.ssl_certificate) > 0 ? aws_acm_certificate.ssl_certificate[0].arn : null)
   ssl_policy        = "ELBSecurityPolicy-2016-08"
 
   default_action {

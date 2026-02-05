@@ -67,7 +67,6 @@ resource "aws_lambda_event_source_mapping" "lambda_smart_device_to_s3_event_mapp
   parallelization_factor             = 2
   maximum_retry_attempts             = 5
   bisect_batch_on_function_error     = true
- 
 }
 
 module "smart_device_to_rds_lambda_function" {
@@ -315,7 +314,112 @@ resource "aws_s3_bucket_notification" "s3_trigger" {
   depends_on = [aws_lambda_function.s3_to_rds_lambda]
 }
 
-# This should also be a separate resource
+# Enhanced FTP Lambda with Site-Aware Processing
+resource "aws_lambda_function" "enhanced_ftp_lambda" {
+  function_name = "enhanced-ftp-processor"
+  role         = aws_iam_role.lambda_role.arn
+  runtime      = "python3.12"
+  handler      = "lambda_function.lambda_handler"
+  filename     = data.archive_file.enhanced_ftp_lambda_zip.output_path
+  timeout      = 300
+  memory_size  = 512
+
+  environment {
+    variables = {
+      SITE_CONFIG_BUCKET = var.site_config_bucket_name
+      FTP_HOST          = var.ftp_host
+      FTP_USER          = var.ftp_user
+      FTP_PASS          = var.ftp_pass
+      FTP_FOLDER        = var.ftp_folder
+      S3_BUCKET         = var.s3_bucket
+      S3_FOLDER         = var.s3_folder
+      RDS_ENDPOINT      = var.rds_endpoint
+      RDS_DB_NAME       = var.rds_db_name
+      RDS_USERNAME      = var.rds_username
+      RDS_PASSWORD      = var.rds_password
+    }
+  }
+
+  layers = [
+    "arn:aws:lambda:eu-west-2:794038252750:layer:python-pandas:4",
+    "arn:aws:lambda:eu-west-2:794038252750:layer:sqlchemy:1"
+  ]
+
+  source_code_hash = data.archive_file.enhanced_ftp_lambda_zip.output_base64sha256
+}
+
+data "archive_file" "enhanced_ftp_lambda_zip" {
+  type        = "zip"
+  output_path = "${path.module}/enhanced_ftp_lambda.zip"
+  source {
+    content = templatefile("${path.module}/../aws-enhanced-lambda/enhanced_ftp_lambda.py", {
+      site_config_bucket = var.site_config_bucket_name
+    })
+    filename = "lambda_function.py"
+  }
+}
+
+# SNS Alarm Message Trigger Lambda
+resource "aws_lambda_function" "sns_alarm_trigger" {
+  function_name = "SNS_Alarm_Message_Trigger"
+  role         = aws_iam_role.lambda_role.arn
+  runtime      = "python3.12"
+  handler      = "lambda_function.lambda_handler"
+  filename     = data.archive_file.sns_alarm_lambda_zip.output_path
+  timeout      = 60
+  memory_size  = 256
+
+  environment {
+    variables = {
+      SNS_TOPIC_ARN = "arn:aws:sns:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:CloudWatchAlarmTopic"
+    }
+  }
+
+  source_code_hash = data.archive_file.sns_alarm_lambda_zip.output_base64sha256
+}
+
+data "archive_file" "sns_alarm_lambda_zip" {
+  type        = "zip"
+  output_path = "${path.module}/sns_alarm_lambda.zip"
+  source {
+    content = <<EOF
+import json
+import boto3
+import logging
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+def lambda_handler(event, context):
+    """Process SNS alarm messages"""
+    try:
+        for record in event['Records']:
+            sns_message = json.loads(record['Sns']['Message'])
+            logger.info(f"Processing alarm: {sns_message.get('AlarmName', 'Unknown')}")
+            
+            # Process alarm logic here
+            # This could trigger emails, update DynamoDB, etc.
+            
+        return {
+            'statusCode': 200,
+            'body': json.dumps('Alarm processed successfully')
+        }
+    except Exception as e:
+        logger.error(f"Error processing alarm: {e}")
+        return {
+            'statusCode': 500,
+            'body': json.dumps(f'Error: {str(e)}')
+        }
+EOF
+    filename = "lambda_function.py"
+  }
+}
+
+# Data sources for current AWS account and region
+data "aws_caller_identity" "current" {}
+data "aws_region" "current" {}
+
+# S3 trigger permission
 resource "aws_lambda_permission" "allow_s3_trigger" {
   statement_id  = "AllowS3Invoke"
   action        = "lambda:InvokeFunction"

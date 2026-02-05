@@ -50,6 +50,12 @@ variable "smarterise_domain_root" {
   type        = string
 }
 
+variable "existing_certificate_arn" {
+  description = "Existing ACM certificate ARN for the domain"
+  type        = string
+  default     = null
+}
+
 variable "smarterise_dns_zone_id" {
   type        = string
   description = "The zone ID of the demo dns zone"
