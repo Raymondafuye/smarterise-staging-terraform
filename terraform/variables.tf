@@ -120,3 +120,9 @@ variable "skip_ssl_certificate" {
   type        = bool
   default     = false
 }
+
+variable "enable_expensive_resources" {
+  description = "Enable expensive resources (RDS, ECS, Lambda, Kinesis) for testing"
+  type        = bool
+  default     = false
+}

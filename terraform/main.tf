@@ -7,9 +7,9 @@
 module "aws_iot" {
   source                             = "./aws-iot"
   iot_device_certificate_bucket_name = module.s3.iot_device_certificate_bucket_name
-  device_data_stream_name            = module.aws_kinesis_data_stream.device_data_stream_name
-  device_data_stream_arn             = module.aws_kinesis_data_stream.device_data_stream_arn
-  kinesis_kms_key_arn                = module.aws_kinesis_data_stream.kinesis_kms_key_arn
+  device_data_stream_name            = var.enable_expensive_resources ? module.aws_kinesis_data_stream[0].device_data_stream_name : ""
+  device_data_stream_arn             = var.enable_expensive_resources ? module.aws_kinesis_data_stream[0].device_data_stream_arn : ""
+  kinesis_kms_key_arn                = var.enable_expensive_resources ? module.aws_kinesis_data_stream[0].kinesis_kms_key_arn : ""
   smart_device_names                 = var.smart_device_names
 }
 
@@ -22,14 +22,16 @@ module "aws-site-config" {
 
 # Enhanced EventBridge for Site-Aware Scheduling
 module "aws-enhanced-eventbridge" {
+  count                    = var.enable_expensive_resources ? 1 : 0
   source                   = "./aws-enhanced-eventbridge"
-  ftp_lambda_arn          = module.aws-lambda.ftp_lambda_arn
-  ftp_lambda_function_name = module.aws-lambda.ftp_lambda_function_name
+  ftp_lambda_arn          = var.enable_expensive_resources ? module.aws-lambda[0].ftp_lambda_arn : ""
+  ftp_lambda_function_name = var.enable_expensive_resources ? module.aws-lambda[0].ftp_lambda_function_name : ""
   
   depends_on = [module.aws-lambda]
 }
 
 module "aws_kinesis_data_stream" {
+  count       = var.enable_expensive_resources ? 1 : 0
   source      = "./aws-kinesis-data-stream"
   account_id  = module.meta.account_id
   region_name = module.meta.aws_active_region_name
@@ -58,12 +60,13 @@ module "s3" {
 
 #I want to skip the athena setup for now
 module "aws-lambda" {
+  count                                           = var.enable_expensive_resources ? 1 : 0
   source                                          = "./aws-lambda"
-  device_kinesis_data_stream_arn                  = module.aws_kinesis_data_stream.device_data_stream_arn
+  device_kinesis_data_stream_arn                  = var.enable_expensive_resources ? module.aws_kinesis_data_stream[0].device_data_stream_arn : ""
   datalake_raw_bucket_arn                         = module.s3.datalake_raw_bucket_arn
   datalake_raw_athena_results_bucket_arn          = module.s3.datalake_raw_athena_results_bucket_arn
-  parsed_device_kinesis_data_stream_arn           = module.aws_kinesis_data_stream.parsed_device_data_stream_arn
-  smart_deivce_to_rds_env_vars                    = { "DB_INSTANCE_ARN" : module.rds.rds_instance_arn, "SECRET_ARN" : module.rds.rds_credentials_secret_arn}
+  parsed_device_kinesis_data_stream_arn           = var.enable_expensive_resources ? module.aws_kinesis_data_stream[0].parsed_device_data_stream_arn : ""
+  smart_deivce_to_rds_env_vars                    = var.enable_expensive_resources ? { "DB_INSTANCE_ARN" : module.rds[0].rds_instance_arn, "SECRET_ARN" : module.rds[0].rds_credentials_secret_arn} : {}
   ftp_host                                        = var.ftp_host
   ftp_user                                        = var.ftp_user
   ftp_pass                                        = var.ftp_pass
@@ -71,18 +74,19 @@ module "aws-lambda" {
   s3_bucket                                       = var.s3_bucket
   s3_folder                                       = var.s3_folder
   database_url                                    = var.database_url
-  rds_endpoint                                    = module.rds.rds_instance_endpoint
-  rds_db_name                                     = module.rds.rds_instance_name
-  rds_username                                    = module.rds.rds_instance_username
-  rds_password                                    = module.rds.rds_instance_password
-  rds_instance_arn                                = module.rds.rds_instance_arn
-  rds_credentials_secret_arn                      = module.rds.rds_credentials_secret_arn
+  rds_endpoint                                    = var.enable_expensive_resources ? module.rds[0].rds_instance_endpoint : ""
+  rds_db_name                                     = var.enable_expensive_resources ? module.rds[0].rds_instance_name : ""
+  rds_username                                    = var.enable_expensive_resources ? module.rds[0].rds_instance_username : ""
+  rds_password                                    = var.enable_expensive_resources ? module.rds[0].rds_instance_password : ""
+  rds_instance_arn                                = var.enable_expensive_resources ? module.rds[0].rds_instance_arn : ""
+  rds_credentials_secret_arn                      = var.enable_expensive_resources ? module.rds[0].rds_credentials_secret_arn : ""
   smart_device_to_s3_raw_lambda_function_env_vars = {}
-  connect_to_aurora_lambda_function_env_vars      = { "DB_INSTANCE_ARN" : module.rds.rds_instance_arn,"SECRET_ARN" : module.rds.rds_credentials_secret_arn}
+  connect_to_aurora_lambda_function_env_vars      = var.enable_expensive_resources ? { "DB_INSTANCE_ARN" : module.rds[0].rds_instance_arn,"SECRET_ARN" : module.rds[0].rds_credentials_secret_arn} : {}
   site_config_bucket_name                         = var.site_config_bucket_name
-  }
+}
 
 module "rds" {
+  count               = var.enable_expensive_resources ? 1 : 0
   source              = "./aws-rds"
   public_subnets     = module.aws-vpc.public_subnets
   rds_postgresql_username = var.rds_postgresql_username
@@ -92,8 +96,9 @@ module "rds" {
 }
 
 module "aws-eventbridge" {
+  count      = var.enable_expensive_resources ? 1 : 0
   source     = "./aws-eventbridge"
-  lambda_arn = module.aws-lambda.lambda_arn
+  lambda_arn = var.enable_expensive_resources ? module.aws-lambda[0].lambda_arn : ""
 }
 
 
@@ -116,6 +121,7 @@ module "aws-ecr" {
 }
 
 module "aws-ecs" {
+  count                            = var.enable_expensive_resources ? 1 : 0
   source                           = "./aws-ecs"
   environment                      = var.environment
   aws_account_id                   = module.meta.account_id
@@ -125,9 +131,9 @@ module "aws-ecs" {
   vpc_id                           = module.aws-vpc.vpc_id
   smarterise_domain_root           = var.smarterise_domain_root
   smarterise_dns_zone_id           = module.aws-route53.smarterise_demo_dns_zone_id
-  rds_instance_arn                 = module.rds.rds_instance_arn
-  rds_credentials_secret_arn       = module.rds.rds_credentials_secret_arn
-  rds_connection_string_secret_arn = module.rds.rds_connection_string_secret_arn
+  rds_instance_arn                 = var.enable_expensive_resources ? module.rds[0].rds_instance_arn : ""
+  rds_credentials_secret_arn       = var.enable_expensive_resources ? module.rds[0].rds_credentials_secret_arn : ""
+  rds_connection_string_secret_arn = var.enable_expensive_resources ? module.rds[0].rds_connection_string_secret_arn : ""
   existing_certificate_arn         = var.existing_certificate_arn
 }
 
@@ -324,7 +330,7 @@ variable "alarms" {
 }
 
 resource "aws_cloudwatch_metric_alarm" "alarms" {
-  for_each = var.alarms
+  for_each = var.enable_expensive_resources ? var.alarms : {}
   alarm_name          = each.key
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
@@ -334,19 +340,21 @@ resource "aws_cloudwatch_metric_alarm" "alarms" {
   statistic           = "Average"
   threshold           = 3.0
   actions_enabled     = true
-  alarm_actions       = [aws_sns_topic.alarm_topic.arn]
+  alarm_actions       = [aws_sns_topic.alarm_topic[0].arn]
 }
 
 
 ###SNS IMPORT
 resource "aws_sns_topic" "alarm_topic" {
+  count = var.enable_expensive_resources ? 1 : 0
   name = "CloudWatchAlarmTopic"
 }
 
 resource "aws_sns_topic_subscription" "lambda_subscription" {
-  topic_arn = aws_sns_topic.alarm_topic.arn
+  count     = var.enable_expensive_resources ? 1 : 0
+  topic_arn = aws_sns_topic.alarm_topic[0].arn
   protocol  = "lambda"
-  endpoint  = module.aws-lambda.sns_alarm_trigger_arn
+  endpoint  = module.aws-lambda[0].sns_alarm_trigger_arn
 }
 
 ###ses configuration
