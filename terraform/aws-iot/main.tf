@@ -89,6 +89,7 @@ resource "aws_s3_object" "smart_device_private_key_s3_object" {
 # Kinesis Routing
 ###########################################################
 resource "aws_iam_role" "iot_core_write_to_kinesis_device_stream_role" {
+  count = var.enable_kinesis_integration ? 1 : 0
   name = "iot_core_write_to_kinesis_device_stream_role"
 
   assume_role_policy = jsonencode({
@@ -106,8 +107,9 @@ resource "aws_iam_role" "iot_core_write_to_kinesis_device_stream_role" {
 }
 
 resource "aws_iam_role_policy" "write_to_kinesis_device_stream_policy" {
+  count = var.enable_kinesis_integration ? 1 : 0
   name = "write_to_kinesis_device_stream_policy"
-  role = aws_iam_role.iot_core_write_to_kinesis_device_stream_role.id
+  role = aws_iam_role.iot_core_write_to_kinesis_device_stream_role[0].id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -127,7 +129,7 @@ resource "aws_iam_role_policy" "write_to_kinesis_device_stream_policy" {
 }
 
 resource "aws_iot_topic_rule" "write_to_kinesis_device_data_stream_role" {
-  for_each    = toset(var.smart_device_names)
+  for_each    = var.enable_kinesis_integration ? toset(var.smart_device_names) : []
   name        = "write_to_kinesis_data_stream_${each.value}"
   description = "Example rule"
   enabled     = true
@@ -135,7 +137,7 @@ resource "aws_iot_topic_rule" "write_to_kinesis_device_data_stream_role" {
   sql_version = "2016-03-23"
 
   kinesis {
-    role_arn      = aws_iam_role.iot_core_write_to_kinesis_device_stream_role.arn
+    role_arn      = aws_iam_role.iot_core_write_to_kinesis_device_stream_role[0].arn
     stream_name   = var.device_data_stream_name
     partition_key = each.value
   }

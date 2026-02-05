@@ -11,6 +11,7 @@ module "aws_iot" {
   device_data_stream_arn             = var.enable_expensive_resources ? module.aws_kinesis_data_stream[0].device_data_stream_arn : ""
   kinesis_kms_key_arn                = var.enable_expensive_resources ? module.aws_kinesis_data_stream[0].kinesis_kms_key_arn : ""
   smart_device_names                 = var.smart_device_names
+  enable_kinesis_integration         = var.enable_expensive_resources
 }
 
 # Site Configuration Management Module

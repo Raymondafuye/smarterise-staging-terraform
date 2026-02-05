@@ -44,3 +44,9 @@ variable "kinesis_kms_key_arn" {
   description = "The ARN of the device data stream KMS key"
   type        = string
 }
+
+variable "enable_kinesis_integration" {
+  description = "Enable Kinesis integration for IoT devices"
+  type        = bool
+  default     = true
+}
