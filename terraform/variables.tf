@@ -73,7 +73,7 @@ variable "ftp_pass" {
   description = "FTP password"
   type        = string
   sensitive   = true
-  default     = "Sm@rterise"
+  default     = null
 }
 
 variable "ftp_folder" {
@@ -98,7 +98,7 @@ variable "database_url" {
   description = "Database connection URL"
   type        = string
   sensitive   = true
-  default     = "postgresql://dbadmin:PLACEHOLDER@postgresql-instance.cj4m4g2kmc36.eu-west-2.rds.amazonaws.com:5432/mydb"
+  default     = null
 }
 
 

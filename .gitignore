@@ -46,3 +46,9 @@ certs/
 *.pyc
 
 terraform/builds/
+
+# Environment files with sensitive data
+.env
+*.env
+secrets.tfvars
+*secrets*
