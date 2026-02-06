@@ -518,3 +518,118 @@ resource "aws_lambda_permission" "allow_s3_trigger" {
 #  principal     = "events.amazonaws.com"
 #  source_arn    = aws_cloudwatch_event_rule.schedule_connect_to_aurora.arn
 #}
+
+
+###########################################################
+# Temperature Monitoring FTP-to-S3 Lambda
+###########################################################
+
+# IAM Role for Temperature Monitoring Lambda
+resource "aws_iam_role" "temperature_ftp_to_s3_role" {
+  name = "temperature-ftp-to-s3-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = {
+        Service = "lambda.amazonaws.com"
+      }
+    }]
+  })
+}
+
+# IAM Policy for Temperature Monitoring Lambda
+resource "aws_iam_policy" "temperature_ftp_to_s3_policy" {
+  name        = "temperature-ftp-to-s3-policy"
+  description = "IAM policy for temperature FTP to S3 Lambda"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject",
+          "s3:ListBucket",
+          "s3:HeadObject"
+        ]
+        Resource = [
+          "arn:aws:s3:::${var.temperature_s3_bucket}",
+          "arn:aws:s3:::${var.temperature_s3_bucket}/*"
+        ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Resource = "arn:aws:logs:*:*:*"
+      }
+    ]
+  })
+}
+
+# Attach Policy to Role
+resource "aws_iam_role_policy_attachment" "temperature_ftp_to_s3_attach" {
+  role       = aws_iam_role.temperature_ftp_to_s3_role.name
+  policy_arn = aws_iam_policy.temperature_ftp_to_s3_policy.arn
+}
+
+# CloudWatch Log Group
+resource "aws_cloudwatch_log_group" "temperature_ftp_to_s3_logs" {
+  name              = "/aws/lambda/temperature-ftp-to-s3"
+  retention_in_days = 3
+}
+
+# Lambda Function
+resource "aws_lambda_function" "temperature_ftp_to_s3" {
+  function_name = "temperature-ftp-to-s3"
+  runtime       = "python3.12"
+  handler       = "lambda_function.lambda_handler"
+  role          = aws_iam_role.temperature_ftp_to_s3_role.arn
+  filename      = "${path.module}/../../lambda/temperature-ftp-to-s3/lambda_function.zip"
+  timeout       = 900  # 15 minutes
+  memory_size   = 512
+
+  environment {
+    variables = {
+      FTP_HOST   = var.temperature_ftp_host
+      FTP_USER   = var.temperature_ftp_user
+      FTP_PASS   = var.temperature_ftp_pass
+      FTP_FOLDER = var.temperature_ftp_folder
+      S3_BUCKET  = var.temperature_s3_bucket
+      SITE_IDS   = var.temperature_site_ids
+    }
+  }
+
+  depends_on = [aws_cloudwatch_log_group.temperature_ftp_to_s3_logs]
+}
+
+# EventBridge Schedule Rule
+resource "aws_cloudwatch_event_rule" "temperature_ftp_schedule" {
+  name                = "temperature-ftp-to-s3-schedule"
+  description         = "Trigger temperature FTP to S3 Lambda"
+  schedule_expression = var.temperature_schedule_expression
+  state               = var.temperature_schedule_enabled ? "ENABLED" : "DISABLED"
+}
+
+# EventBridge Target
+resource "aws_cloudwatch_event_target" "temperature_ftp_lambda_target" {
+  rule      = aws_cloudwatch_event_rule.temperature_ftp_schedule.name
+  target_id = "temperature-ftp-to-s3"
+  arn       = aws_lambda_function.temperature_ftp_to_s3.arn
+}
+
+# Lambda Permission for EventBridge
+resource "aws_lambda_permission" "allow_eventbridge_temperature" {
+  statement_id  = "AllowExecutionFromEventBridge"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.temperature_ftp_to_s3.function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.temperature_ftp_schedule.arn
+}
+

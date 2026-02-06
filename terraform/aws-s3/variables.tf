@@ -18,3 +18,8 @@ variable "rds_state_bucket_name" {
   description = "name of the bucket to store the RDS state"
   type        = string
 }
+
+variable "temperature_monitoring_bucket_name" {
+  description = "S3 bucket name for temperature monitoring data"
+  type        = string
+}

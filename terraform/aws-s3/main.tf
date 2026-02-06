@@ -127,3 +127,41 @@ resource "aws_s3_bucket" "rds_state_bucket" {
 #  bucket = aws_s3_bucket.rds_state_bucket.id
 #  acl    = "private"
 #}
+
+
+#############################
+### Temperature Monitoring ##
+#############################
+resource "aws_s3_bucket" "temperature_monitoring" {
+  bucket        = var.temperature_monitoring_bucket_name
+  force_destroy = false
+}
+
+resource "aws_s3_bucket_ownership_controls" "temperature_monitoring_ownership" {
+  bucket = aws_s3_bucket.temperature_monitoring.id
+  rule {
+    object_ownership = "BucketOwnerPreferred"
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "temperature_monitoring_encryption" {
+  bucket = aws_s3_bucket.temperature_monitoring.bucket
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+resource "aws_s3_bucket_acl" "temperature_monitoring_acl" {
+  depends_on = [aws_s3_bucket_ownership_controls.temperature_monitoring_ownership]
+  bucket     = aws_s3_bucket.temperature_monitoring.id
+  acl        = "private"
+}
+
+resource "aws_s3_bucket_versioning" "temperature_monitoring_versioning" {
+  bucket = aws_s3_bucket.temperature_monitoring.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
