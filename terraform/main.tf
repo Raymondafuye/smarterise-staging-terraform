@@ -43,6 +43,7 @@ module "s3" {
   datalake_raw_athena_results_storage_bucket_name = var.datalake_raw_athena_results_storage_bucket_name
   iot_device_certificate_bucket_name              = var.iot_device_certificate_bucket_name
   rds_state_bucket_name                           = var.rds_state_bucket_name
+  temperature_monitoring_bucket_name              = var.temperature_monitoring_bucket_name
 }
 
 
@@ -84,6 +85,16 @@ module "aws-lambda" {
   smart_device_to_s3_raw_lambda_function_env_vars = {}
   connect_to_aurora_lambda_function_env_vars      = var.enable_expensive_resources ? { "DB_INSTANCE_ARN" : module.rds[0].rds_instance_arn,"SECRET_ARN" : module.rds[0].rds_credentials_secret_arn} : {}
   site_config_bucket_name                         = var.site_config_bucket_name
+  
+  # Temperature Monitoring Configuration
+  temperature_ftp_host            = var.temperature_ftp_host
+  temperature_ftp_user            = var.temperature_ftp_user
+  temperature_ftp_pass            = var.temperature_ftp_pass
+  temperature_ftp_folder          = var.temperature_ftp_folder
+  temperature_s3_bucket           = module.s3.temperature_monitoring_bucket_name
+  temperature_site_ids            = var.temperature_site_ids
+  temperature_schedule_expression = var.temperature_schedule_expression
+  temperature_schedule_enabled    = var.temperature_schedule_enabled
   
   depends_on = [module.aws_kinesis_data_stream, module.rds]
 }

@@ -126,3 +126,54 @@ variable "enable_expensive_resources" {
   type        = bool
   default     = false
 }
+
+### Temperature Monitoring Variables ###
+variable "temperature_monitoring_bucket_name" {
+  description = "S3 bucket name for temperature monitoring data"
+  type        = string
+  default     = "smarterise-temperature-monitoring"
+}
+
+variable "temperature_ftp_host" {
+  description = "FTP server hostname for temperature monitoring"
+  type        = string
+  default     = ""
+}
+
+variable "temperature_ftp_user" {
+  description = "FTP username for temperature monitoring"
+  type        = string
+  default     = ""
+}
+
+variable "temperature_ftp_pass" {
+  description = "FTP password for temperature monitoring"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "temperature_ftp_folder" {
+  description = "FTP root folder for temperature data"
+  type        = string
+  default     = "/thermal-data"
+}
+
+variable "temperature_site_ids" {
+  description = "Comma-separated list of site IDs to monitor"
+  type        = string
+  default     = "C368,C468"
+}
+
+variable "temperature_schedule_expression" {
+  description = "EventBridge schedule expression for temperature monitoring"
+  type        = string
+  default     = "cron(0 * * * ? *)"
+}
+
+variable "temperature_schedule_enabled" {
+  description = "Whether the temperature monitoring schedule is enabled"
+  type        = bool
+  default     = true
+}
+

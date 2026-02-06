@@ -1,0 +1,18 @@
+# Temperature Monitoring Configuration Example
+# Copy this to terraform.tfvars and fill in your actual values
+
+# S3 Bucket
+temperature_monitoring_bucket_name = "smarterise-thermal-data"
+
+# FTP Server Configuration
+temperature_ftp_host   = "ftp.smarterise.com"
+temperature_ftp_user   = "your-ftp-username"
+temperature_ftp_pass   = "your-ftp-password"
+temperature_ftp_folder = "/"
+
+# Site Configuration
+temperature_site_ids = "C368,C468"
+
+# Schedule (Default: Hourly)
+temperature_schedule_expression = "cron(0 * * * ? *)"
+temperature_schedule_enabled    = true

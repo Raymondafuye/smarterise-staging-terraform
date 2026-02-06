@@ -17,4 +17,12 @@ output "datalake_raw_athena_results_bucket_name" {
 output "datalake_raw_athena_results_bucket_arn" {
   value = aws_s3_bucket.athena_datalake_raw_results_storage.arn
 }
+
+output "temperature_monitoring_bucket_name" {
+  value = aws_s3_bucket.temperature_monitoring.bucket
+}
+
+output "temperature_monitoring_bucket_arn" {
+  value = aws_s3_bucket.temperature_monitoring.arn
+}
  

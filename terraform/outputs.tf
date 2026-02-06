@@ -96,3 +96,14 @@ output "site_switching_instructions" {
     🌐 Application URL: https://${var.smarterise_domain_root}
   EOT
 }
+
+# Temperature Monitoring Outputs
+output "temperature_monitoring_bucket_name" {
+  description = "The name of the S3 bucket created for temperature monitoring data"
+  value       = module.s3.temperature_monitoring_bucket_name
+}
+
+output "temperature_monitoring_bucket_arn" {
+  description = "The ARN of the S3 bucket created for temperature monitoring data"
+  value       = module.s3.temperature_monitoring_bucket_arn
+}
