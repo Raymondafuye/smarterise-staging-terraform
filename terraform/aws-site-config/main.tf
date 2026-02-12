@@ -119,7 +119,11 @@ resource "aws_lambda_function" "site_config_manager" {
     }
   }
   
+<<<<<<< HEAD
   depends_on = [aws_cloudwatch_log_group.site_config_manager_logs]
+=======
+  depends_on = [aws_cloudwatch_log_group.site_config_manager_log_group]
+>>>>>>> f40ffd256af25b7e5248349fe2e912c87072b444
 }
 
 data "archive_file" "site_config_manager_zip" {
@@ -170,9 +174,13 @@ resource "aws_iam_role_policy" "iot_rule_manager_policy" {
       {
         Effect = "Allow"
         Action = [
-          "s3:GetObject"
+          "s3:GetObject",
+          "s3:ListBucket"
         ]
-        Resource = "${aws_s3_bucket.site_config_bucket.arn}/*"
+        Resource = [
+          "${aws_s3_bucket.site_config_bucket.arn}",
+          "${aws_s3_bucket.site_config_bucket.arn}/*"
+        ]
       },
       {
         Effect = "Allow"
@@ -211,6 +219,18 @@ resource "aws_lambda_function" "iot_rule_manager" {
       IOT_ROLE_ARN           = var.iot_kinesis_role_arn
     }
   }
+  
+  depends_on = [aws_cloudwatch_log_group.iot_rule_manager_log_group]
+}
+
+resource "aws_cloudwatch_log_group" "iot_rule_manager_log_group" {
+  name              = "/aws/lambda/iot-rule-manager"
+  retention_in_days = 3
+}
+
+resource "aws_cloudwatch_log_group" "site_config_manager_log_group" {
+  name              = "/aws/lambda/site-config-manager"
+  retention_in_days = 3
 }
 
 data "archive_file" "iot_rule_manager_zip" {
