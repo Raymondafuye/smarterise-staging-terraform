@@ -119,11 +119,7 @@ resource "aws_lambda_function" "site_config_manager" {
     }
   }
   
-<<<<<<< HEAD
   depends_on = [aws_cloudwatch_log_group.site_config_manager_logs]
-=======
-  depends_on = [aws_cloudwatch_log_group.site_config_manager_log_group]
->>>>>>> f40ffd256af25b7e5248349fe2e912c87072b444
 }
 
 data "archive_file" "site_config_manager_zip" {
