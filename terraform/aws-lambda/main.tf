@@ -157,6 +157,13 @@ resource "aws_iam_policy" "lambda_policy" {
         ]
       },
       {
+        Action = ["s3:GetObject"]
+        Effect   = "Allow"
+        Resource = [
+          "arn:aws:s3:::${var.site_config_bucket_name}/site-tiers.json"
+        ]
+      },
+      {
         Action = [
           "logs:CreateLogGroup",
           "logs:CreateLogStream",
@@ -195,12 +202,13 @@ resource "aws_lambda_function" "ftp_to_s3" {
 
   environment {
     variables = {
-      FTP_HOST   = var.ftp_host
-      FTP_USER   = var.ftp_user
-      FTP_PASS   = var.ftp_pass
-      FTP_FOLDER = var.ftp_folder
-      S3_BUCKET  = var.s3_bucket
-      S3_FOLDER  = var.s3_folder
+      FTP_HOST           = var.ftp_host
+      FTP_USER           = var.ftp_user
+      FTP_PASS           = var.ftp_pass
+      FTP_FOLDER         = var.ftp_folder
+      S3_BUCKET          = var.s3_bucket
+      S3_FOLDER          = var.s3_folder
+      SITE_CONFIG_BUCKET = var.site_config_bucket_name
     }
   }
   

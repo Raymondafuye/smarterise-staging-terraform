@@ -3,7 +3,7 @@
 # EventBridge rule for CRITICAL sites (daily FTP backup at 11 PM)
 resource "aws_cloudwatch_event_rule" "critical_sites_ftp_backup" {
   name                = "critical-sites-ftp-backup"
-  description         = "Daily FTP backup for CRITICAL tier sites"
+  description         = "Daily FTP backup for CRITICAL tier sites at 11 PM"
   schedule_expression = "cron(0 23 * * ? *)"  # 11 PM daily
 }
 
@@ -14,7 +14,6 @@ resource "aws_cloudwatch_event_target" "critical_sites_ftp_target" {
 
   input = jsonencode({
     site_tier = "CRITICAL"
-    backup_type = "daily"
   })
 }
 
@@ -32,7 +31,6 @@ resource "aws_cloudwatch_event_target" "non_critical_sites_ftp_target" {
 
   input = jsonencode({
     site_tier = "NON_CRITICAL"
-    sync_type = "hourly"
   })
 }
 
