@@ -97,6 +97,12 @@ resource "aws_iam_role_policy" "site_config_manager_policy" {
   })
 }
 
+# CloudWatch Log Group for Site Config Manager
+resource "aws_cloudwatch_log_group" "site_config_manager_logs" {
+  name              = "/aws/lambda/site-config-manager"
+  retention_in_days = 3
+}
+
 # Site Config Manager Lambda
 resource "aws_lambda_function" "site_config_manager" {
   filename         = data.archive_file.site_config_manager_zip.output_path
@@ -112,6 +118,8 @@ resource "aws_lambda_function" "site_config_manager" {
       SITE_CONFIG_BUCKET = var.site_config_bucket_name
     }
   }
+  
+  depends_on = [aws_cloudwatch_log_group.site_config_manager_logs]
 }
 
 data "archive_file" "site_config_manager_zip" {

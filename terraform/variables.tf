@@ -66,7 +66,7 @@ variable "ftp_host" {
 variable "ftp_user" {
   description = "FTP username"
   type        = string
-  default     = "r.afuye@smarterise.com"
+  default     = "data@smarterise.com"
 }
 
 variable "ftp_pass" {
@@ -79,7 +79,7 @@ variable "ftp_pass" {
 variable "ftp_folder" {
   description = "FTP folder path"
   type        = string
-  default     = "/307a57025366"
+  default     = "/307a57014210"
 }
 
 variable "s3_bucket" {
