@@ -269,23 +269,11 @@ def bulk_insert_to_rds(df: pd.DataFrame, connection: psycopg2.extensions.connect
             sql = f"""
                 INSERT INTO {rds_table} ({columns_str})
                 VALUES %s
-                ON CONFLICT ("timestamp") 
-                DO UPDATE SET 
+                ON CONFLICT (gateway_serial, timestamp) 
+                DO NOTHING
             """
             
             # Add update conditions for all columns except timestamp
-            update_columns = [
-                f'"{col}" = CASE '
-                f'WHEN ({rds_table}.line_to_neutral_voltage_phase_a IS NULL '
-                f'OR {rds_table}.line_to_neutral_voltage_phase_a = 0) '
-                f'THEN EXCLUDED."{col}" '
-                f'ELSE {rds_table}."{col}" END'
-                for col in COLS_FOR_RDS.keys() 
-                if col != 'timestamp'
-            ]
-            
-            sql += ', '.join(update_columns)
-            
             # Create tuples of values
             values = []
             for _, row in df.iterrows():

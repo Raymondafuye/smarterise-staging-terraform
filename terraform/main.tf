@@ -16,9 +16,13 @@ module "aws_iot" {
 
 # Site Configuration Management Module
 module "aws-site-config" {
-  source                 = "./aws-site-config"
+  source                  = "./aws-site-config"
   site_config_bucket_name = var.site_config_bucket_name
-  smart_device_names     = var.smart_device_names
+  smart_device_names      = var.smart_device_names
+  device_data_stream_name = var.enable_expensive_resources ? module.aws_kinesis_data_stream[0].device_data_stream_name : ""
+  iot_kinesis_role_arn    = var.enable_expensive_resources ? module.aws_iot.iot_kinesis_role_arn : ""
+  
+  depends_on = [module.aws_iot, module.aws_kinesis_data_stream]
 }
 
 # Enhanced EventBridge for Site-Aware Scheduling
